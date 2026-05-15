@@ -156,9 +156,12 @@
         </p>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-        <h3 class="text-sm font-semibold text-gray-900 mb-4">
-          Wealth Distribution
-        </h3>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold text-gray-900">
+            Wealth Distribution
+          </h3>
+          <span class="text-xs text-gray-500">Units: mg gold</span>
+        </div>
         <canvas ref="pieChart" height="140"></canvas>
         <p
           v-if="allUsers.length === 0"
@@ -432,7 +435,28 @@ function buildCharts() {
           },
         ],
       },
-      options: { responsive: true, plugins: { legend: { display: false } } },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label(context) {
+                const value = context.parsed.y ?? context.parsed;
+                return `${value.toLocaleString()} mg`;
+              },
+            },
+          },
+        },
+        scales: {
+          y: {
+            title: {
+              display: true,
+              text: "Gold reserve (mg)",
+            },
+          },
+        },
+      },
     });
   }
 
@@ -444,6 +468,7 @@ function buildCharts() {
     }
   }, 0);
   const baitul = Number(BigInt(store.baitulMal.goldReserve || "0"));
+
   if (pieChart.value) {
     if (pieChartInstance) pieChartInstance.destroy();
     pieChartInstance = new Chart(pieChart.value.getContext("2d"), {
@@ -457,7 +482,20 @@ function buildCharts() {
           },
         ],
       },
-      options: { responsive: true },
+      options: {
+        responsive: true,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label(context) {
+                const label = context.label || "";
+                const value = Number(context.parsed || 0);
+                return `${label}: ${value.toLocaleString()} mg`;
+              },
+            },
+          },
+        },
+      },
     });
   }
 }
