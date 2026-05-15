@@ -43,6 +43,7 @@ services:
     command: sh -c "(test -x node_modules/.bin/vite || npm install --legacy-peer-deps --no-audit --no-fund) && npm run dev -- --host"
     environment:
       - CHOKIDAR_USEPOLLING=true
+      - VITE_API_PROXY_TARGET=http://backend:3000
 
 volumes:
   db_data:
