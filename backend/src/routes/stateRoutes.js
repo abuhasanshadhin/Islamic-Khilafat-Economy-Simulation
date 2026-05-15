@@ -3,6 +3,7 @@ const router = express.Router();
 const { BaitulMalEntity } = require('../entities/BaitulMal');
 const { UserEntity } = require('../entities/User');
 const { TransactionEntity } = require('../entities/Transaction');
+const { parsePaginationParams, buildPaginationMeta } = require('../utils/pagination');
 
 function requireRole(...roles) {
   return (req, res, next) => {
@@ -14,7 +15,7 @@ function requireRole(...roles) {
 }
 
 function makeStateRoutes(dataSource, authenticateToken) {
-  router.get('/stats', authenticateToken, async (req, res) => {
+  router.get('/stats', async (req, res) => {
     try {
       const bait = await dataSource.getRepository(BaitulMalEntity).findOneBy({ id: 1 });
       if (!bait) return res.status(404).json({ error: 'BaitulMal record not found' });
@@ -91,18 +92,16 @@ function makeStateRoutes(dataSource, authenticateToken) {
     try {
       const type = String(req.query.type || '').trim();
       const minAmount = req.query.minAmount ? BigInt(req.query.minAmount) : null;
-      const page = Math.max(1, parseInt(req.query.page || '1', 10));
-      const limit = Math.min(200, Math.max(5, parseInt(req.query.limit || '50', 10)));
+      const { page, limit } = parsePaginationParams(req.query, { defaultLimit: 50, minLimit: 5, maxLimit: 200 });
 
       const qb = dataSource.getRepository(TransactionEntity).createQueryBuilder('tx')
-        .orderBy('tx.timestamp', 'DESC')
-        .skip((page - 1) * limit)
-        .take(limit);
+        .orderBy('tx.timestamp', 'DESC');
 
       if (type) qb.andWhere('tx.type = :type', { type });
       if (minAmount !== null) qb.andWhere('tx.amount >= :minAmount', { minAmount: minAmount.toString() });
 
-      const [items, total] = await qb.getManyAndCount();
+      const [items, total] = await qb.skip((page - 1) * limit).take(limit).getManyAndCount();
+      const meta = buildPaginationMeta(page, limit, total);
 
       const mapped = items.map(t => ({
         id: t.id,
@@ -113,7 +112,7 @@ function makeStateRoutes(dataSource, authenticateToken) {
         timestamp: t.timestamp,
       }));
 
-      return res.json({ items: mapped, total, page, limit });
+      return res.json({ items: mapped, meta, page, limit, total });
     } catch (err) {
       console.error('[stateRoutes] transactions error', err);
       res.status(500).json({ error: 'Failed to fetch transactions' });

@@ -1,0 +1,6 @@
+- Avoid code duplication. Create reusable components when needed.
+- Use the existing `Pagination.vue` component for paginated lists.
+- Keep UI components under `frontend/src/components/ui`.
+- Separate presentation from business logic.
+- Follow industry-standard best practices.
+- Keep code clean, maintainable, scalable, and sustainable.

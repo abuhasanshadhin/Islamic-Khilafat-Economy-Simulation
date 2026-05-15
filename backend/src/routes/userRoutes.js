@@ -40,7 +40,13 @@ function makeUserRoutes(dataSource, authenticateToken, io) {
         memberSince: u.createdAt || null,
       }))
 
-      return res.json({ items, total: result.total, page: result.page, limit: result.limit })
+      return res.json({
+        items,
+        meta: result.meta,
+        page: result.page,
+        limit: result.limit,
+        total: result.total,
+      })
     } catch (err) {
       console.error('[userRoutes] /directory error', err);
       res.status(500).json({ error: 'Failed to fetch directory' });

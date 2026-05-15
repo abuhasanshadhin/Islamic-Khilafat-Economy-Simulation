@@ -48,6 +48,7 @@ export const useStore = defineStore('main', {
             this.prices = map
         },
         setStocks(list) { this.stocks = list },
+        setTransactions(transactions = []) { this.transactions = transactions },
         addTransaction(tx) { this.transactions.unshift(tx); if (this.transactions.length > 50) this.transactions.pop(); },
         setZakatToast(payload) { this.zakatToast = payload },
     }

@@ -1,10 +1,25 @@
-// Simple pagination helper for TypeORM repositories
-// Usage: const { items, total, page, limit } = await paginate(repo, { where, order, page, limit, select })
+// Structured pagination helper for TypeORM repositories and query builders.
+// Usage: const result = await paginate(repo, { where, order, page, limit, select })
+// Returns: { items, total, page, limit, meta }
 
 function normalizeInt(v, def) {
   const n = parseInt(String(v || ''), 10)
   if (Number.isNaN(n)) return def
   return n
+}
+
+function buildPaginationMeta(page, limit, total) {
+  const safeLimit = Math.max(1, limit)
+  const totalPages = Math.max(1, Math.ceil(total / safeLimit))
+  return {
+    page,
+    limit: safeLimit,
+    total,
+    totalPages,
+    offset: (page - 1) * safeLimit,
+    hasNext: page < totalPages,
+    hasPrevious: page > 1,
+  }
 }
 
 function parsePaginationParams(query = {}, opts = {}) {
@@ -33,7 +48,19 @@ async function paginate(repository, opts = {}) {
   if (opts.select) findOpts.select = opts.select
 
   const [items, total] = await repository.findAndCount(findOpts)
-  return { items, total, page, limit }
+  return { items, total, page, limit, meta: buildPaginationMeta(page, limit, total) }
 }
 
-module.exports = { paginate, parsePaginationParams }
+async function paginateQueryBuilder(queryBuilder, opts = {}) {
+  const page = Math.max(1, normalizeInt(opts.page, 1))
+  const limit = Math.min(100, Math.max(1, normalizeInt(opts.limit, 20)))
+  const offset = (page - 1) * limit
+
+  queryBuilder.skip(offset)
+  queryBuilder.take(limit)
+
+  const [items, total] = await queryBuilder.getManyAndCount()
+  return { items, total, page, limit, meta: buildPaginationMeta(page, limit, total) }
+}
+
+module.exports = { paginate, paginateQueryBuilder, parsePaginationParams, buildPaginationMeta }
