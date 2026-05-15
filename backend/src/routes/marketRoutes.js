@@ -43,17 +43,34 @@ function makeMarketRoutes(dataSource, io) {
     try {
       const userId = req.user && req.user.userId;
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
-      const products = await dataSource.getRepository(ProductEntity).find({
+
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10));
+      const repo = dataSource.getRepository(ProductEntity);
+
+      const [products, total] = await repo.findAndCount({
         where: { ownerId: userId },
         order: { id: 'DESC' },
+        skip: (page - 1) * limit,
+        take: limit,
       });
-      return res.json(products.map(p => ({
+
+      const items = products.map((p) => ({
         id: p.id,
         name: p.name,
         description: p.description,
         price: p.price ? p.price.toString() : '0',
         stock: p.stock,
-      })));
+      }));
+
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+      const rangeStart = total === 0 ? 0 : (page - 1) * limit + 1;
+      const rangeEnd = Math.min(total, page * limit);
+
+      return res.json({
+        items,
+        meta: { page, limit, total, totalPages, rangeStart, rangeEnd },
+      });
     } catch (err) {
       console.error('[marketRoutes] my-products error', err);
       res.status(500).json({ error: 'Failed to fetch products' });

@@ -107,19 +107,32 @@
       <div
         class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 flex flex-col"
       >
-        <h2 class="text-base font-semibold text-gray-900 mb-4">
-          Recent Transactions
-        </h2>
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-base font-semibold text-gray-900">
+              Recent Transactions
+            </h2>
+            <p class="text-xs text-gray-400">
+              Latest activity from your account
+            </p>
+          </div>
+          <router-link
+            to="/transactions"
+            class="text-sm font-semibold text-khilafat-700 hover:underline"
+          >
+            View all
+          </router-link>
+        </div>
         <div class="flex-1 space-y-2 overflow-auto max-h-64">
           <div
-            v-if="transactions.length === 0"
+            v-if="recentTransactions.length === 0"
             class="text-center py-10 text-sm text-gray-400"
           >
             <div class="text-2xl mb-2">📋</div>
             No transactions yet
           </div>
           <div
-            v-for="tx in transactions"
+            v-for="tx in recentTransactions"
             :key="tx.id"
             class="flex items-center justify-between px-3 py-2.5 bg-gray-50 rounded-lg border border-gray-100"
           >
@@ -155,12 +168,15 @@
               Products you have listed in the marketplace
             </p>
           </div>
-          <span class="text-xs text-gray-400"
-            >{{ myProducts.length }} active</span
+          <router-link
+            to="/my-listings"
+            class="text-sm font-semibold text-khilafat-700 hover:underline"
           >
+            View all
+          </router-link>
         </div>
         <div
-          v-if="myProducts.length === 0"
+          v-if="recentListings.length === 0"
           class="text-center py-8 text-sm text-gray-400"
         >
           <div class="text-3xl mb-2">🏪</div>
@@ -173,7 +189,7 @@
         </div>
         <div v-else class="space-y-2">
           <div
-            v-for="p in myProducts"
+            v-for="p in recentListings"
             :key="p.id"
             class="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg border border-gray-100"
           >
@@ -216,11 +232,8 @@ import { useStore } from "../stores/useStore";
 
 const store = useStore();
 const user = computed(() => store.user);
-const transactions = computed(() => store.transactions);
-
-const myProducts = ref([]);
-const listingMsg = ref(null);
-
+const recentTransactions = ref([]);
+const recentListings = ref([]);
 onMounted(async () => {
   const token = localStorage.getItem("token");
   if (!token) return;
@@ -231,18 +244,39 @@ onMounted(async () => {
       }),
       axios.get("/api/user/transactions", {
         headers: { Authorization: `Bearer ${token}` },
+        params: { page: 1, limit: 4 },
       }),
       axios.get("/api/market/my-products", {
         headers: { Authorization: `Bearer ${token}` },
+        params: { page: 1, limit: 4 },
       }),
     ]);
     store.setUser({ ...meRes.data, token });
-    store.setTransactions(txRes.data);
-    myProducts.value = myProductsRes.data;
+    recentTransactions.value = txRes.data.items || [];
+    recentListings.value = myProductsRes.data.items || [];
   } catch (e) {
     console.warn("Dashboard fetch", e);
   }
 });
+
+async function delistProduct(productId) {
+  const token = localStorage.getItem("token");
+  try {
+    await axios.delete(`/api/market/product/${productId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    recentListings.value = recentListings.value.filter(
+      (p) => p.id !== productId,
+    );
+    listingMsg.value = { ok: true, text: "Listing removed" };
+  } catch (e) {
+    listingMsg.value = {
+      ok: false,
+      text: e.response?.data?.error || "Failed to remove listing",
+    };
+  }
+  setTimeout(() => (listingMsg.value = null), 3000);
+}
 
 function formatMgToGramString(mgString) {
   try {
@@ -291,22 +325,5 @@ function txClass(type) {
 }
 function txIcon(type) {
   return (txTypeMap[type] || txTypeMap.TRANSFER).icon;
-}
-
-async function delistProduct(productId) {
-  const token = localStorage.getItem("token");
-  try {
-    await axios.delete(`/api/market/product/${productId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    myProducts.value = myProducts.value.filter((p) => p.id !== productId);
-    listingMsg.value = { ok: true, text: "Listing removed" };
-  } catch (e) {
-    listingMsg.value = {
-      ok: false,
-      text: e.response?.data?.error || "Failed to remove listing",
-    };
-  }
-  setTimeout(() => (listingMsg.value = null), 3000);
 }
 </script>

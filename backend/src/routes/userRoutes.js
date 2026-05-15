@@ -137,28 +137,40 @@ function makeUserRoutes(dataSource, authenticateToken, io) {
     }
   });
 
-  // Get current user's recent transactions
+  // Get current user's paginated transactions
   router.get('/transactions', authenticateToken, async (req, res) => {
     try {
       const userId = req.user && req.user.userId;
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10));
       const txRepo = dataSource.getRepository(TransactionEntity);
-      const txs = await txRepo
-        .createQueryBuilder('tx')
-        .where('tx.senderId = :id OR tx.receiverId = :id', { id: userId })
-        .orderBy('tx.timestamp', 'DESC')
-        .take(50)
-        .getMany();
 
-      return res.json(txs.map(t => ({
+      const [txs, total] = await txRepo.findAndCount({
+        where: [{ senderId: userId }, { receiverId: userId }],
+        order: { timestamp: 'DESC' },
+        skip: (page - 1) * limit,
+        take: limit,
+      });
+
+      const items = txs.map((t) => ({
         id: t.id,
         type: t.type,
         amount: t.amount ? t.amount.toString() : '0',
         senderId: t.senderId,
         receiverId: t.receiverId,
         timestamp: t.timestamp,
-      })));
+      }));
+
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+      const rangeStart = total === 0 ? 0 : (page - 1) * limit + 1;
+      const rangeEnd = Math.min(total, page * limit);
+
+      return res.json({
+        items,
+        meta: { page, limit, total, totalPages, rangeStart, rangeEnd },
+      });
     } catch (err) {
       console.error('[userRoutes] /transactions error', err);
       res.status(500).json({ error: 'Failed to fetch transactions' });

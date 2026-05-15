@@ -9,6 +9,8 @@ import StockMarket from '../views/StockMarket.vue'
 import MemberDirectory from '../views/MemberDirectory.vue'
 import ProfileView from '../views/ProfileView.vue'
 import SendGoldView from '../views/SendGoldView.vue'
+import TransactionsView from '../views/TransactionsView.vue'
+import MyListingsView from '../views/MyListingsView.vue'
 
 const routes = [
     { path: '/', name: 'Dashboard', component: Dashboard, meta: { requiresAuth: true } },
@@ -19,6 +21,8 @@ const routes = [
     { path: '/members', name: 'Members', component: MemberDirectory },
     { path: '/profile/:username', name: 'Profile', component: ProfileView },
     { path: '/send-gold', name: 'SendGold', component: SendGoldView, meta: { requiresAuth: true } },
+    { path: '/transactions', name: 'Transactions', component: TransactionsView, meta: { requiresAuth: true } },
+    { path: '/my-listings', name: 'MyListings', component: MyListingsView, meta: { requiresAuth: true } },
     { path: '/admin', name: 'Admin', component: AdminView, meta: { requiresAuth: true, requiresRole: 'KHALIFA' } },
     { path: '/login', name: 'Login', component: LoginView }
 ]
