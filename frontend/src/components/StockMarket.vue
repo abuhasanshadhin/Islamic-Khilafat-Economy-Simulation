@@ -60,7 +60,7 @@
               </div>
 
               <!-- Buy controls -->
-              <div v-if="isLoggedIn && s.ownerId !== store.user.id" class="flex flex-col gap-2 shrink-0 min-w-[140px]">
+              <div v-if="isLoggedIn && s.ownerId !== store.user.id" class="flex flex-col gap-2 shrink-0 min-w-35">
                 <div class="flex items-center gap-2">
                   <input
                     type="number"

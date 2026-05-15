@@ -4,23 +4,25 @@
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-khilafat-900">Community Members</h1>
-        <p class="text-sm text-gray-500 mt-0.5">{{ filtered.length }} registered members of the Ummah</p>
+        <p class="text-sm text-gray-500 mt-0.5">{{ total }} registered members of the Ummah</p>
       </div>
       <div class="flex items-center gap-3">
-        <input
-          v-model="search"
-          class="px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-400 w-56 bg-white"
-          placeholder="Search by username…"
-        />
-        <select
-          v-model="sortBy"
-          class="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-khilafat-400"
-        >
-          <option value="rep">Sort: Reputation</option>
-          <option value="gold">Sort: Gold</option>
-          <option value="name">Sort: Name</option>
-        </select>
-      </div>
+          <input
+            v-model="search"
+            @input="onSearchInput"
+            class="px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-400 w-56 bg-white"
+            placeholder="Search by username…"
+          />
+          <select
+            v-model="sort"
+            @change="fetchPage(1)"
+            class="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-khilafat-400"
+          >
+            <option value="rep">Sort: Reputation</option>
+            <option value="gold">Sort: Gold</option>
+            <option value="name">Sort: Name</option>
+          </select>
+        </div>
     </div>
 
     <!-- Loading -->
@@ -39,7 +41,7 @@
     </div>
 
     <!-- Empty -->
-    <div v-else-if="filtered.length === 0" class="text-center py-20 text-gray-400">
+    <div v-else-if="members.length === 0" class="text-center py-20 text-gray-400">
       <div class="text-4xl mb-3">🔍</div>
       <p class="font-medium">No members found</p>
       <p class="text-sm mt-1">Try a different search term</p>
@@ -48,7 +50,7 @@
     <!-- Members grid -->
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       <div
-        v-for="u in filtered"
+        v-for="u in members"
         :key="u.id"
         class="bg-white border border-gray-200 rounded-xl shadow-sm p-5 flex flex-col gap-3 hover:shadow-md hover:border-khilafat-200 transition-all"
       >
@@ -96,45 +98,47 @@
         >View Profile →</router-link>
       </div>
     </div>
+
+    <!-- Pagination -->
+    <PaginationControls
+      :page="page"
+      :total="total"
+      :limit="limit"
+      :pageInput="pageInput"
+      :rangeStart="rangeStart"
+      :rangeEnd="rangeEnd"
+      :totalPages="totalPages"
+      @prev="prevPage"
+      @next="nextPage"
+      @goto="fetchPage"
+      @update:pageInput="val => pageInput = val"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
+import { onMounted, watch } from 'vue'
+import usePagination from '../composables/usePagination'
+import PaginationControls from './PaginationControls.vue'
 
-const members = ref([])
-const search = ref('')
-const sortBy = ref('rep')
-const loading = ref(true)
-
-onMounted(async () => {
-  try {
-    const token = localStorage.getItem('token')
-    const res = await axios.get('/api/user/directory', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    members.value = res.data
-  } catch (e) {
-    console.warn('directory fetch', e)
-  } finally {
-    loading.value = false
-  }
-})
-
-const filtered = computed(() => {
-  let list = members.value
-  const q = search.value.trim().toLowerCase()
-  if (q) list = list.filter(u => u.username.toLowerCase().includes(q))
-
-  return [...list].sort((a, b) => {
-    if (sortBy.value === 'gold') {
-      try { return Number(BigInt(b.goldBalance || '0') - BigInt(a.goldBalance || '0')) } catch { return 0 }
-    }
-    if (sortBy.value === 'name') return a.username.localeCompare(b.username)
-    return b.reputationScore - a.reputationScore
-  })
-})
+const {
+  items: members,
+  search,
+  sort,
+  page,
+  limit,
+  total,
+  loading,
+  pageInput,
+  fetchPage,
+  onSearchInput,
+  goToPage,
+  nextPage,
+  prevPage,
+  totalPages,
+  rangeStart,
+  rangeEnd,
+} = usePagination({ url: '/api/user/directory', initialLimit: 20, initialSort: 'rep' })
 
 function toGrams(mg) {
   try { return (BigInt(mg || '0') / 1000n).toString() } catch { return '0' }
@@ -152,4 +156,8 @@ function repColor(score) {
   if (s < 70) return 'bg-amber-400'
   return 'bg-khilafat-500'
 }
+
+onMounted(() => fetchPage(1))
+
+watch(sort, () => fetchPage(1))
 </script>

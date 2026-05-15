@@ -33,7 +33,7 @@
           class="px-3 py-2 border border-gray-200 rounded-lg text-sm w-48 focus:outline-none focus:ring-2 focus:ring-khilafat-400"
           placeholder="Min amount (mg)"
         />
-        <span class="ml-auto text-xs text-gray-400">{{ filtered.length }} records</span>
+        <span class="ml-auto text-xs text-gray-400">{{ txTotal }} records</span>
       </div>
 
       <div class="overflow-auto max-h-72 rounded-lg border border-gray-100">
@@ -48,10 +48,10 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-if="filtered.length === 0">
+            <tr v-if="txItems.length === 0 && !txLoading">
               <td colspan="5" class="px-4 py-8 text-center text-sm text-gray-400">No transactions</td>
             </tr>
-            <tr v-for="tx in filtered" :key="tx.id" class="border-t border-gray-100 hover:bg-gray-50 transition-colors">
+            <tr v-for="tx in txItems" :key="tx.id" class="border-t border-gray-100 hover:bg-gray-50 transition-colors">
               <td class="px-4 py-3">
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold" :class="txBadge(tx.type)">{{ tx.type }}</span>
               </td>
@@ -63,6 +63,19 @@
           </tbody>
         </table>
       </div>
+        <PaginationControls
+          :page="txPage"
+          :total="txTotal"
+          :limit="txLimit"
+          :pageInput="txPageInput"
+          :rangeStart="() => ((txPage-1)*txLimit)+1"
+          :rangeEnd="() => Math.min(txTotal, txPage*txLimit)"
+          :totalPages="() => Math.max(1, Math.ceil(txTotal/txLimit))"
+          @prev="() => fetchTransactions(txPage-1)"
+          @next="() => fetchTransactions(txPage+1)"
+          @goto="p => fetchTransactions(p)"
+          @update:pageInput="val => txPageInput = val"
+        />
     </div>
 
     <!-- Charts Tab -->
@@ -140,6 +153,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useStore } from '../stores/useStore'
 import axios from 'axios'
 import Chart from 'chart.js/auto'
+import PaginationControls from './PaginationControls.vue'
 
 const store = useStore()
 const tabs = ['Transactions', 'Charts', 'Users']
@@ -148,22 +162,34 @@ const activeTab = ref('Transactions')
 const filterType = ref('ALL')
 const minAmount = ref(0)
 const allTransactions = ref([])
+const txItems = ref([])
+const txTotal = ref(0)
+const txPage = ref(1)
+const txLimit = ref(50)
+const txPageInput = ref(1)
+const txLoading = ref(false)
 const allUsers = ref([])
 const roleSelections = ref({})
 const roleMsg = ref(null)
 
 const transactions = computed(() => allTransactions.value.length ? allTransactions.value : store.transactions)
 
-const filtered = computed(() => {
-  return transactions.value.filter(tx => {
-    if (filterType.value !== 'ALL' && tx.type !== filterType.value) return false
-    try {
-      const amt = BigInt(tx.amount || '0')
-      if (amt < BigInt(minAmount.value || 0)) return false
-    } catch (e) {}
-    return true
-  })
-})
+// Server-driven transactions (paginated)
+async function fetchTransactions(p = txPage.value) {
+  txLoading.value = true
+  try {
+    const params = { page: p, limit: txLimit.value }
+    if (filterType.value && filterType.value !== 'ALL') params.type = filterType.value
+    if (minAmount.value) params.minAmount = String(minAmount.value)
+    const res = await axios.get('/api/state/transactions', { headers: authHeader(), params })
+    txItems.value = res.data.items || []
+    txTotal.value = res.data.total || 0
+    txPage.value = res.data.page || p
+    txPageInput.value = txPage.value
+  } catch (e) {
+    console.warn('AdminView: fetch transactions failed', e)
+  } finally { txLoading.value = false }
+}
 
 function authHeader() {
   return { Authorization: `Bearer ${localStorage.getItem('token') || ''}` }
@@ -254,13 +280,11 @@ watch(() => store.baitulHistory.length, () => {
 
 onMounted(async () => {
   try {
-    const [txRes, usersRes] = await Promise.all([
-      axios.get('/api/state/transactions', { headers: authHeader() }),
-      axios.get('/api/user/all', { headers: authHeader() }),
-    ])
-    allTransactions.value = txRes.data
+    const usersRes = await axios.get('/api/user/all', { headers: authHeader() })
     allUsers.value = usersRes.data
     allUsers.value.forEach(u => { roleSelections.value[u.id] = u.role })
+    // initial transactions fetch
+    fetchTransactions(1)
   } catch (e) {
     console.warn('AdminView: fetch failed', e)
   }

@@ -4,23 +4,43 @@ const { UserEntity } = require('../entities/User');
 const { ProductEntity } = require('../entities/Product');
 const { TransactionEntity } = require('../entities/Transaction');
 const { Like } = require('typeorm');
+const { paginate, parsePaginationParams } = require('../utils/pagination');
 
 function makeUserRoutes(dataSource, authenticateToken, io) {
-  // Community member directory — all authenticated users
+  // Community member directory — supports server-side search + pagination
+  // Query params: q (search), page (1-based), limit, sort (rep|gold|name)
   router.get('/directory', authenticateToken, async (req, res) => {
     try {
-      const users = await dataSource.getRepository(UserEntity).find({
-        select: ['id', 'username', 'role', 'reputationScore', 'goldBalance', 'createdAt'],
-        order: { reputationScore: 'DESC' },
-      });
-      return res.json(users.map(u => ({
+      const q = String(req.query.q || '').trim();
+      const { page, limit } = parsePaginationParams(req.query);
+      const sort = String(req.query.sort || 'rep');
+
+      const where = q.length > 0 ? { username: Like(`%${q}%`) } : {};
+
+      // determine order
+      let order = { reputationScore: 'DESC' };
+      if (sort === 'gold') order = { goldBalance: 'DESC' };
+      if (sort === 'name') order = { username: 'ASC' };
+
+      const repo = dataSource.getRepository(UserEntity)
+      const result = await paginate(repo, {
+        where,
+        order,
+        page,
+        limit,
+        select: ['id', 'username', 'role', 'reputationScore', 'goldBalance', 'createdAt']
+      })
+
+      const items = result.items.map(u => ({
         id: u.id,
         username: u.username,
         role: u.role,
         reputationScore: u.reputationScore,
         goldBalance: u.goldBalance ? u.goldBalance.toString() : '0',
         memberSince: u.createdAt || null,
-      })));
+      }))
+
+      return res.json({ items, total: result.total, page: result.page, limit: result.limit })
     } catch (err) {
       console.error('[userRoutes] /directory error', err);
       res.status(500).json({ error: 'Failed to fetch directory' });

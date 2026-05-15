@@ -85,21 +85,35 @@ function makeStateRoutes(dataSource, authenticateToken) {
     }
   });
 
-  // KHALIFA only: all transactions
+  // KHALIFA only: all transactions with server-side filtering + pagination
+  // Query params: type, minAmount (mg), page, limit
   router.get('/transactions', authenticateToken, requireRole('KHALIFA'), async (req, res) => {
     try {
-      const txs = await dataSource.getRepository(TransactionEntity).find({
-        order: { timestamp: 'DESC' },
-        take: 200,
-      });
-      return res.json(txs.map(t => ({
+      const type = String(req.query.type || '').trim();
+      const minAmount = req.query.minAmount ? BigInt(req.query.minAmount) : null;
+      const page = Math.max(1, parseInt(req.query.page || '1', 10));
+      const limit = Math.min(200, Math.max(5, parseInt(req.query.limit || '50', 10)));
+
+      const qb = dataSource.getRepository(TransactionEntity).createQueryBuilder('tx')
+        .orderBy('tx.timestamp', 'DESC')
+        .skip((page - 1) * limit)
+        .take(limit);
+
+      if (type) qb.andWhere('tx.type = :type', { type });
+      if (minAmount !== null) qb.andWhere('tx.amount >= :minAmount', { minAmount: minAmount.toString() });
+
+      const [items, total] = await qb.getManyAndCount();
+
+      const mapped = items.map(t => ({
         id: t.id,
         type: t.type,
         amount: t.amount ? t.amount.toString() : '0',
         senderId: t.senderId,
         receiverId: t.receiverId,
         timestamp: t.timestamp,
-      })));
+      }));
+
+      return res.json({ items: mapped, total, page, limit });
     } catch (err) {
       console.error('[stateRoutes] transactions error', err);
       res.status(500).json({ error: 'Failed to fetch transactions' });
