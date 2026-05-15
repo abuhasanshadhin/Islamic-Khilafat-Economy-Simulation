@@ -88,6 +88,18 @@
           </div>
         </div>
 
+        <!-- Resource Prices -->
+        <div class="border-t border-gray-100 pt-4 mb-4">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Market Prices</p>
+          <div class="grid grid-cols-3 gap-2">
+            <div v-for="r in ['GOLD','OIL','GAS']" :key="r" class="flex flex-col items-center bg-gray-50 rounded-lg px-3 py-2 text-center">
+              <span class="text-xs text-gray-400 font-semibold">{{ r }}</span>
+              <span class="text-sm font-bold text-amber-600 mt-1">{{ resourcePrice(r) }}</span>
+              <span class="text-xs text-gray-400">mg/unit</span>
+            </div>
+          </div>
+        </div>
+
         <div class="bg-gray-50 border border-gray-100 rounded-lg p-3 flex items-center justify-between">
           <span class="text-sm text-gray-500">Total Zakat Collected</span>
           <span class="text-sm font-semibold text-khilafat-700">{{ formatMgToGramString(store.baitulMal.totalZakatCollected ?? '0') }} g</span>
@@ -126,12 +138,36 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
+import axios from 'axios'
 import { useStore } from '../stores/useStore'
 
 const store = useStore()
 const user = computed(() => store.user)
 const transactions = computed(() => store.transactions)
+
+onMounted(async () => {
+  const token = localStorage.getItem('token')
+  if (!token) return
+  try {
+    const [meRes, txRes, pricesRes] = await Promise.all([
+      axios.get('/api/user/me', { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get('/api/user/transactions', { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get('/api/market/prices'),
+    ])
+    store.setUser({ ...meRes.data, token })
+    txRes.data.forEach(tx => store.addTransaction(tx))
+    store.setPrices(pricesRes.data)
+  } catch (e) {
+    console.warn('Dashboard fetch', e)
+  }
+})
+
+function resourcePrice(resource) {
+  const p = store.prices[resource]
+  if (!p) return '—'
+  return Number(p.priceInGoldMg).toLocaleString()
+}
 
 function formatMgToGramString(mgString) {
   try {

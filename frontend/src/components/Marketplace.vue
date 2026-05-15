@@ -8,11 +8,13 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
       <!-- Products grid -->
-      <div class="lg:col-span-3">
+      <div :class="isLoggedIn ? 'lg:col-span-3' : 'lg:col-span-4'">
         <div v-if="products.length === 0" class="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center">
           <div class="text-5xl mb-4">🏪</div>
           <p class="text-gray-500 font-medium">No products listed yet</p>
-          <p class="text-sm text-gray-400 mt-1">Be the first to list an item</p>
+          <p class="text-sm text-gray-400 mt-1">
+            {{ isLoggedIn ? 'Be the first to list an item' : 'Sign in to list or buy items' }}
+          </p>
         </div>
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           <div
@@ -21,7 +23,7 @@
             class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md hover:border-khilafat-200 transition-all"
           >
             <!-- Placeholder banner -->
-            <div class="h-20 bg-gradient-to-br from-khilafat-100 via-khilafat-50 to-amber-50 flex items-center justify-center text-4xl">
+            <div class="h-20 bg-linear-to-br from-khilafat-100 via-khilafat-50 to-amber-50 flex items-center justify-center text-4xl">
               📦
             </div>
             <div class="p-4">
@@ -36,8 +38,8 @@
               <!-- Seller reputation bar -->
               <div class="mb-4">
                 <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
-                  <span>Seller trust</span>
-                  <span class="font-medium" :class="trustColor(product.sellerReputation).replace('bg-', 'text-')">{{ product.sellerReputation || 0 }}%</span>
+                  <span>Seller trust · {{ product.sellerName }}</span>
+                  <span class="font-medium" :class="trustTextColor(product.sellerReputation)">{{ product.sellerReputation || 0 }}</span>
                 </div>
                 <div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
@@ -48,31 +50,46 @@
                 </div>
               </div>
 
-              <div class="flex items-center gap-2">
-                <input
-                  type="number"
-                  v-model.number="quantities[product.id]"
-                  min="1"
-                  :max="product.stock"
-                  class="w-16 px-2 py-1.5 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-khilafat-400 focus:border-transparent"
-                />
-                <button
-                  @click="buyNow(product)"
-                  class="flex-1 py-1.5 bg-khilafat-700 hover:bg-khilafat-600 text-white text-sm font-medium rounded-lg transition-colors"
-                >Buy Now</button>
-              </div>
+              <!-- Buy controls: only for authenticated users who don't own the item -->
+              <template v-if="isLoggedIn && product.ownerId !== store.user.id">
+                <div class="flex items-center gap-2">
+                  <input
+                    type="number"
+                    v-model.number="quantities[product.id]"
+                    min="1"
+                    :max="product.stock"
+                    class="w-16 px-2 py-1.5 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-khilafat-400 focus:border-transparent"
+                  />
+                  <button
+                    @click="buyNow(product)"
+                    class="flex-1 py-1.5 bg-khilafat-700 hover:bg-khilafat-600 text-white text-sm font-medium rounded-lg transition-colors"
+                  >Buy Now</button>
+                </div>
+              </template>
+              <template v-else-if="isLoggedIn && product.ownerId === store.user.id">
+                <div class="text-xs text-gray-400 italic">Your listing</div>
+              </template>
+              <template v-else>
+                <router-link to="/login" class="block text-center text-xs text-khilafat-600 hover:underline mt-1">Sign in to buy</router-link>
+              </template>
               <div class="text-xs text-gray-400 mt-2">{{ product.stock }} in stock</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Sidebar: List an Item -->
-      <aside class="lg:col-span-1">
+      <!-- Sidebar: List an Item — authenticated users with rep >= 40 only -->
+      <aside v-if="isLoggedIn" class="lg:col-span-1">
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 sticky top-24">
           <h3 class="text-base font-semibold text-gray-900 mb-1">List an Item</h3>
           <p class="text-xs text-gray-400 mb-4">Sell goods for gold</p>
-          <form @submit.prevent="listItem" class="space-y-3">
+
+          <!-- Reputation restriction notice -->
+          <div v-if="isReputationRestricted" class="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 mb-3">
+            ⚠ Your reputation score ({{ store.user.reputationScore }}) is below 40. Marketplace listing is restricted.
+          </div>
+
+          <form v-else @submit.prevent="listItem" class="space-y-3">
             <div>
               <label class="text-xs font-medium text-gray-600 block mb-1">Name</label>
               <input
@@ -123,12 +140,22 @@
           </div>
         </div>
       </aside>
+
+      <!-- Guest CTA -->
+      <aside v-else class="lg:col-span-1">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-center">
+          <div class="text-3xl mb-3">🔒</div>
+          <p class="text-sm font-semibold text-gray-700 mb-1">Sign in to trade</p>
+          <p class="text-xs text-gray-400 mb-4">Register to list items and buy from the marketplace</p>
+          <router-link to="/login" class="block w-full py-2 bg-khilafat-700 hover:bg-khilafat-600 text-white font-semibold rounded-lg text-sm transition-colors">Sign In</router-link>
+        </div>
+      </aside>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useStore } from "../stores/useStore";
 import socket from "../socket";
 import axios from "axios";
@@ -139,6 +166,9 @@ const quantities = ref({});
 const toast = ref("");
 
 const form = ref({ name: "", description: "", priceGrams: null, stock: 1 });
+
+const isLoggedIn = computed(() => !!store.user.token);
+const isReputationRestricted = computed(() => Number(store.user.reputationScore) < 40);
 
 async function loadProducts() {
   try {
@@ -173,6 +203,13 @@ function trustColor(score) {
   if (s < 40) return "bg-red-500";
   if (s < 70) return "bg-amber-500";
   return "bg-khilafat-600";
+}
+
+function trustTextColor(score) {
+  const s = Number(score || 0);
+  if (s < 40) return "text-red-600";
+  if (s < 70) return "text-amber-600";
+  return "text-khilafat-600";
 }
 
 async function buyNow(product) {

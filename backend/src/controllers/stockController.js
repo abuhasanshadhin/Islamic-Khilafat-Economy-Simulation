@@ -48,8 +48,19 @@ function makeStockController(dataSource, io) {
 
   async function listStocks(req, res) {
     try {
-      const stocks = await dataSource.getRepository(StockEntity).find({ relations: ['owner'] });
-      return res.json(stocks);
+      const stocks = await dataSource.getRepository(StockEntity).find({ relations: ['owner', 'holdings'] });
+      return res.json(stocks.map(s => ({
+        id: s.id,
+        name: s.name,
+        ownerId: s.ownerId,
+        ownerName: s.owner?.username ?? null,
+        totalShares: s.totalShares,
+        availableShares: s.availableShares,
+        sharePrice: s.sharePrice ? s.sharePrice.toString() : '0',
+        isPublic: s.isPublic,
+        listedAt: s.listedAt,
+        holdings: (s.holdings || []).map(h => ({ userId: h.userId, shares: h.shares })),
+      })));
     } catch (err) {
       console.error('[stockController.listStocks] error', err);
       res.status(500).json({ error: 'Failed to list stocks' });

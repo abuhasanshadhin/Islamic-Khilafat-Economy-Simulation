@@ -13,9 +13,10 @@ function getRandomFloat(min, max, decimals = 2) {
 function startMining(dataSource, io, intervalMs = 5 * 60 * 1000) {
   async function cycle() {
     try {
-      const goldInc = BigInt(getRandomInt(500, 2000));
-      const oilInc = getRandomFloat(0.5, 3.0, 3);
-      const gasInc = getRandomFloat(0.2, 1.5, 3);
+      const boost = global.miningBoosted ? 2 : 1;
+      const goldInc = BigInt(getRandomInt(500, 2000) * boost);
+      const oilInc = getRandomFloat(0.5 * boost, 3.0 * boost, 3);
+      const gasInc = getRandomFloat(0.2 * boost, 1.5 * boost, 3);
 
       const result = await dataSource.transaction(async (manager) => {
         const existing = await manager.findOneBy(BaitulMalEntity, { id: 1 });

@@ -25,6 +25,11 @@
             active-class="nav-active"
           >Marketplace</router-link>
           <router-link
+            to="/stocks"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-khilafat-200 hover:text-white hover:bg-khilafat-700 transition-colors"
+            active-class="nav-active"
+          >Stocks</router-link>
+          <router-link
             to="/shura"
             class="px-4 py-2 rounded-lg text-sm font-medium text-khilafat-200 hover:text-white hover:bg-khilafat-700 transition-colors"
             active-class="nav-active"
@@ -64,13 +69,22 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       <router-view />
     </main>
+
+    <!-- Zakat deducted toast -->
+    <transition name="slide-up">
+      <div v-if="store.zakatToast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-purple-700 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium max-w-sm text-center" @click="store.setZakatToast(null)">
+        ◈ Zakat deducted: <strong>{{ mgToGrams(store.zakatToast.deducted) }} g</strong>. May Allah accept it.
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 import { useStore } from './stores/useStore'
+import socket from './socket'
 
 const store = useStore()
 const router = useRouter()
@@ -81,9 +95,39 @@ const avatarInitial = computed(() => {
   return name.charAt(0).toUpperCase()
 })
 
+function mgToGrams(mg) {
+  try { return (BigInt(mg || '0') / 1000n).toString() } catch { return String(mg) }
+}
+
+// Rehydrate store from token on every page refresh
+onMounted(async () => {
+  const token = localStorage.getItem('token')
+  if (!token || store.user.id) return
+  try {
+    const [meRes, stateRes] = await Promise.all([
+      axios.get('/api/user/me', { headers: { Authorization: `Bearer ${token}` } }),
+      axios.get('/api/state/stats', { headers: { Authorization: `Bearer ${token}` } }),
+    ])
+    store.setUser({ ...meRes.data, token })
+    store.setBaitulMal(stateRes.data)
+    // emit identify so socket room is joined
+    if (meRes.data?.id) socket.emit('identify', meRes.data.id)
+  } catch {
+    localStorage.removeItem('token')
+  }
+
+  // auto-dismiss zakat toast after 6s
+  if (store.zakatToast) setTimeout(() => store.setZakatToast(null), 6000)
+})
+
 function signOut() {
   localStorage.removeItem('token')
   store.setUser({ id: null, username: null, email: null, goldBalance: '0', reputationScore: 0, role: 'USER', token: null })
   router.push('/login')
 }
 </script>
+
+<style>
+.slide-up-enter-active, .slide-up-leave-active { transition: all 0.3s ease; }
+.slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translate(-50%, 20px); }
+</style>

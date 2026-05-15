@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { ResourcePriceEntity } = require('../entities/ResourcePrice');
+const { ProductEntity } = require('../entities/Product');
+const { UserEntity } = require('../entities/User');
+const authenticateToken = require('../middleware/authenticateToken');
 
 function makeMarketRoutes(dataSource, io) {
   router.get('/prices', async (req, res) => {
@@ -10,6 +13,67 @@ function makeMarketRoutes(dataSource, io) {
     } catch (err) {
       console.error('[marketRoutes] error', err);
       res.status(500).json({ error: 'Failed to fetch prices' });
+    }
+  });
+
+  router.get('/products', async (req, res) => {
+    try {
+      const products = await dataSource.getRepository(ProductEntity).find({
+        relations: ['owner'],
+        where: {},
+        order: { id: 'DESC' },
+      });
+      return res.json(products.map(p => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        price: p.price ? p.price.toString() : '0',
+        stock: p.stock,
+        ownerId: p.ownerId,
+        sellerName: p.owner ? p.owner.username : 'Unknown',
+        sellerReputation: p.owner ? p.owner.reputationScore : 0,
+      })));
+    } catch (err) {
+      console.error('[marketRoutes] products error', err);
+      res.status(500).json({ error: 'Failed to fetch products' });
+    }
+  });
+
+  router.post('/list', authenticateToken, async (req, res) => {
+    try {
+      const user = await dataSource.getRepository(UserEntity).findOneBy({ id: req.user.userId });
+      if (!user) return res.status(401).json({ error: 'User not found' });
+      if (user.reputationScore < 40) {
+        return res.status(403).json({ error: 'Reputation score must be at least 40 to list items' });
+      }
+
+      const { name, description, price, stock } = req.body;
+      if (!name || !price) return res.status(400).json({ error: 'name and price are required' });
+
+      const priceBig = BigInt(price);
+      if (priceBig <= 0n) return res.status(400).json({ error: 'price must be > 0' });
+
+      const product = await dataSource.getRepository(ProductEntity).save({
+        name,
+        description: description || null,
+        price: priceBig,
+        stock: Number(stock) || 1,
+        ownerId: req.user.userId,
+      });
+
+      if (io) io.emit('market:new-listing', { id: product.id, name: product.name });
+
+      return res.status(201).json({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: product.price.toString(),
+        stock: product.stock,
+        ownerId: product.ownerId,
+      });
+    } catch (err) {
+      console.error('[marketRoutes] list error', err);
+      res.status(500).json({ error: 'Failed to list product' });
     }
   });
 

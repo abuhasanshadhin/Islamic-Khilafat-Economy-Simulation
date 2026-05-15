@@ -6,8 +6,45 @@
       <p class="text-sm text-gray-500 mt-0.5">Community governance and oversight</p>
     </div>
 
-    <!-- Pending Reports -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+    <!-- File a Report — all authenticated users -->
+    <div v-if="isLoggedIn" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+      <h2 class="text-base font-semibold text-gray-900 mb-1">File a Hisbah Report</h2>
+      <p class="text-xs text-gray-400 mb-4">Report unfair or fraudulent conduct to the Shura Council</p>
+      <form @submit.prevent="submitReport" class="flex flex-wrap gap-3 items-end">
+        <div class="flex-1 min-w-35">
+          <label class="text-xs font-medium text-gray-600 block mb-1">Accused User ID</label>
+          <input
+            v-model.number="reportForm.accusedId"
+            type="number"
+            min="1"
+            required
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-400 focus:border-transparent"
+            placeholder="User ID"
+          />
+        </div>
+        <div class="flex-3 min-w-50">
+          <label class="text-xs font-medium text-gray-600 block mb-1">Reason</label>
+          <input
+            v-model="reportForm.reason"
+            type="text"
+            required
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-400 focus:border-transparent"
+            placeholder="Describe the fraudulent conduct…"
+          />
+        </div>
+        <button
+          type="submit"
+          :disabled="reportSubmitting"
+          class="px-5 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold rounded-lg text-sm transition-colors"
+        >{{ reportSubmitting ? 'Submitting…' : 'Submit Report' }}</button>
+      </form>
+      <div v-if="reportMsg" class="mt-3 text-xs px-3 py-2 rounded-lg border" :class="reportMsg.ok ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'">
+        {{ reportMsg.text }}
+      </div>
+    </div>
+
+    <!-- Pending Reports — SHURA / KHALIFA only -->
+    <div v-if="isShuraOrKhalifa" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
       <div class="flex items-center justify-between mb-5">
         <div>
           <h2 class="text-base font-semibold text-gray-900">Pending Reports</h2>
@@ -60,56 +97,127 @@
       </div>
     </div>
 
-    <!-- State Decisions -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+    <!-- State Decisions — SHURA / KHALIFA only -->
+    <div v-if="isShuraOrKhalifa" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
       <h2 class="text-base font-semibold text-gray-900 mb-1">State Decisions</h2>
-      <p class="text-xs text-gray-400 mb-4">Administrative controls for the Shura</p>
-      <div class="flex flex-wrap gap-3">
-        <button
-          @click="toggleMining"
-          class="px-4 py-2 bg-khilafat-700 hover:bg-khilafat-600 text-white font-medium rounded-lg text-sm transition-colors"
-        >⛏ Toggle Mining Rates</button>
-        <button
-          @click="approveGrant"
-          class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-white font-medium rounded-lg text-sm transition-colors"
-        >💰 Approve Public Grant</button>
+      <p class="text-xs text-gray-400 mb-4">Administrative controls for the Shura Council</p>
+
+      <!-- Approve Public Grant -->
+      <div class="border border-gray-200 rounded-xl p-4 mb-3 bg-amber-50">
+        <p class="text-sm font-semibold text-gray-800 mb-1">💰 Approve Public Grant</p>
+        <p class="text-xs text-gray-500 mb-3">Distribute gold from BaitulMal reserves to all registered users.</p>
+        <div class="flex flex-wrap gap-3 items-end">
+          <div>
+            <label class="text-xs font-medium text-gray-600 block mb-1">Amount per user (mg)</label>
+            <input
+              v-model.number="grantAmount"
+              type="number"
+              min="1"
+              class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent bg-white"
+              placeholder="1000"
+            />
+          </div>
+          <button
+            @click="approveGrant"
+            :disabled="grantLoading"
+            class="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-white font-medium rounded-lg text-sm transition-colors"
+          >{{ grantLoading ? 'Processing…' : '💰 Approve Grant' }}</button>
+        </div>
+        <div v-if="grantMsg" class="mt-2 text-xs px-3 py-2 rounded-lg border" :class="grantMsg.ok ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'">
+          {{ grantMsg.text }}
+        </div>
       </div>
+
+      <!-- Toggle Mining -->
+      <div class="border border-gray-200 rounded-xl p-4 bg-khilafat-50">
+        <p class="text-sm font-semibold text-gray-800 mb-1">⛏ Toggle Mining Boost</p>
+        <p class="text-xs text-gray-500 mb-3">Enable or disable the enhanced mining rate for the State engine.</p>
+        <div class="flex items-center gap-3">
+          <button
+            @click="toggleMining"
+            :disabled="miningLoading"
+            class="px-4 py-2 bg-khilafat-700 hover:bg-khilafat-600 disabled:opacity-60 text-white font-medium rounded-lg text-sm transition-colors"
+          >{{ miningLoading ? 'Toggling…' : '⛏ Toggle Mining Rates' }}</button>
+          <span v-if="miningBoosted !== null" class="text-xs px-2 py-1 rounded-full font-semibold" :class="miningBoosted ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'">
+            {{ miningBoosted ? 'Boosted ON' : 'Boosted OFF' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Not logged in message -->
+    <div v-if="!isLoggedIn" class="bg-white rounded-xl border border-gray-200 shadow-sm p-10 text-center">
+      <div class="text-4xl mb-3">🔒</div>
+      <p class="text-sm font-semibold text-gray-700 mb-1">Sign in to participate</p>
+      <p class="text-xs text-gray-400 mb-4">Authentication is required to file reports or view council activity</p>
+      <router-link to="/login" class="inline-block px-5 py-2 bg-khilafat-700 hover:bg-khilafat-600 text-white font-semibold rounded-lg text-sm transition-colors">Sign In</router-link>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { useStore } from "../stores/useStore";
 import axios from "axios";
+
+const store = useStore();
+
+const isLoggedIn = computed(() => !!store.user.token);
+const isShuraOrKhalifa = computed(() => ['SHURA', 'KHALIFA'].includes(store.user.role));
 
 const reports = ref([]);
 
+// Report form
+const reportForm = ref({ accusedId: null, reason: "" });
+const reportSubmitting = ref(false);
+const reportMsg = ref(null);
+
+// Grant
+const grantAmount = ref(1000);
+const grantLoading = ref(false);
+const grantMsg = ref(null);
+
+// Mining
+const miningLoading = ref(false);
+const miningBoosted = ref(null);
+
+function authHeader() {
+  return { Authorization: `Bearer ${localStorage.getItem("token") || ""}` };
+}
+
 async function loadReports() {
+  if (!isShuraOrKhalifa.value) return;
   try {
-    const res = await axios.get("/api/hisbah/pending", {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-      },
-    });
+    const res = await axios.get("/api/hisbah/pending", { headers: authHeader() });
     reports.value = res.data;
   } catch (e) {
     console.warn("loadReports", e);
   }
 }
 
+async function submitReport() {
+  reportSubmitting.value = true;
+  reportMsg.value = null;
+  try {
+    await axios.post(
+      "/api/hisbah/report",
+      { accusedId: reportForm.value.accusedId, reason: reportForm.value.reason },
+      { headers: authHeader() }
+    );
+    reportMsg.value = { ok: true, text: "Report submitted. The Shura Council will review it." };
+    reportForm.value = { accusedId: null, reason: "" };
+  } catch (e) {
+    const msg = e.response?.data?.error || "Failed to submit report.";
+    reportMsg.value = { ok: false, text: msg };
+  } finally {
+    reportSubmitting.value = false;
+  }
+}
+
 async function markValid(id, accusedId) {
   try {
-    await axios.post(`/api/hisbah/validate/${id}`, null, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-      },
-    });
-    // notify backend to recalc reputation
-    await axios.post(`/api/hisbah/recalc/${accusedId}`, null, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-      },
-    });
+    await axios.post(`/api/hisbah/validate/${id}`, null, { headers: authHeader() });
+    await axios.post(`/api/hisbah/recalc/${accusedId}`, null, { headers: authHeader() });
     loadReports();
   } catch (e) {
     console.warn(e);
@@ -118,11 +226,7 @@ async function markValid(id, accusedId) {
 
 async function resolve(id) {
   try {
-    await axios.post(`/api/hisbah/resolve/${id}`, null, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-      },
-    });
+    await axios.post(`/api/hisbah/resolve/${id}`, null, { headers: authHeader() });
     loadReports();
   } catch (e) {
     console.warn(e);
@@ -130,26 +234,32 @@ async function resolve(id) {
 }
 
 async function toggleMining() {
+  miningLoading.value = true;
   try {
-    await axios.post("/api/state/toggle-mining", null, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-      },
-    });
+    const res = await axios.post("/api/state/toggle-mining", null, { headers: authHeader() });
+    miningBoosted.value = res.data.miningBoosted;
   } catch (e) {
     console.warn(e);
+  } finally {
+    miningLoading.value = false;
   }
 }
 
 async function approveGrant() {
+  grantLoading.value = true;
+  grantMsg.value = null;
   try {
-    await axios.post("/api/state/approve-grant", null, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-      },
-    });
+    const res = await axios.post(
+      "/api/state/approve-grant",
+      { amountMg: grantAmount.value },
+      { headers: authHeader() }
+    );
+    grantMsg.value = { ok: true, text: `Grant approved: ${res.data.usersGranted} users received ${grantAmount.value}mg each.` };
   } catch (e) {
-    console.warn(e);
+    const msg = e.response?.data?.error || "Failed to approve grant.";
+    grantMsg.value = { ok: false, text: msg };
+  } finally {
+    grantLoading.value = false;
   }
 }
 

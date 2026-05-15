@@ -89,6 +89,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { useStore } from '../stores/useStore'
+import socket from '../socket'
 
 const router = useRouter()
 const store = useStore()
@@ -112,6 +113,7 @@ async function submit() {
     const token = data.token
     localStorage.setItem('token', token)
     store.setUser({ ...data.user, token })
+    if (data.user?.id) socket.emit('identify', data.user.id)
     router.push('/')
   } catch (e) {
     const raw = e.response?.data?.error
