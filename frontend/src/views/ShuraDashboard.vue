@@ -2,9 +2,11 @@
   <div class="space-y-6">
     <div class="space-y-2">
       <div>
-        <h1 class="text-2xl font-bold text-khilafat-900">Shura Council</h1>
+        <h1 class="text-2xl font-bold text-khilafat-900">
+          Shura Council & Muhtasib
+        </h1>
         <p class="text-sm text-gray-500 mt-0.5">
-          Community governance and oversight
+          Community governance, market oversight, and Islamic justice
         </p>
       </div>
       <p class="text-sm text-gray-600 max-w-2xl">
@@ -19,7 +21,7 @@
           File a Hisbah Report
         </h2>
         <p class="text-xs text-gray-400 mb-5">
-          Report unfair or fraudulent conduct to the Shura Council.
+          Report unfair or fraudulent conduct to the Shura Council and Muhtasib.
         </p>
 
         <form @submit.prevent="submitReport" class="grid gap-4">
@@ -86,7 +88,8 @@
               {{ reportSubmitting ? "Submitting…" : "Submit Report" }}
             </button>
             <span class="text-xs text-gray-500"
-              >Every report is logged and reviewed by Shura members.</span
+              >Every report is logged and reviewed by the Shura Council and
+              Muhtasib.</span
             >
           </div>
         </form>
@@ -105,7 +108,7 @@
       </div>
 
       <div
-        v-if="isShuraOrKhalifa"
+        v-if="isMarketCouncilMember"
         class="bg-white rounded-3xl border border-gray-200 shadow-sm p-6"
       >
         <div
@@ -189,7 +192,10 @@
       </div>
     </div>
 
-    <div v-if="isShuraOrKhalifa" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div
+      v-if="isStateCouncilMember"
+      class="grid grid-cols-1 lg:grid-cols-2 gap-6"
+    >
       <div
         class="bg-amber-50 border border-amber-100 rounded-3xl p-6 shadow-sm"
       >
@@ -314,7 +320,10 @@ import axios from "axios";
 const store = useStore();
 
 const isLoggedIn = computed(() => !!store.user.token);
-const isShuraOrKhalifa = computed(() =>
+const isMarketCouncilMember = computed(() =>
+  ["SHURA", "KHALIFA", "MUHTASIB"].includes(store.user.role),
+);
+const isStateCouncilMember = computed(() =>
   ["SHURA", "KHALIFA"].includes(store.user.role),
 );
 
@@ -378,7 +387,7 @@ function getApiErrorMessage(error, fallback) {
 }
 
 async function loadReports() {
-  if (!isShuraOrKhalifa.value) return;
+  if (!isMarketCouncilMember.value) return;
   try {
     const res = await axios.get("/api/hisbah/pending", {
       headers: authHeader(),

@@ -57,6 +57,15 @@ async function seed() {
             isZakatEligible: true,
         },
         {
+            username: 'muhtasib',
+            email: 'muhtasib@example.com',
+            password: 'muhtasib123',
+            goldBalance: 70000n,
+            reputationScore: 70,
+            role: 'MUHTASIB',
+            isZakatEligible: true,
+        },
+        {
             username: 'merchant',
             email: 'merchant@example.com',
             password: 'merchant123',

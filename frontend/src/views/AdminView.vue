@@ -265,6 +265,7 @@
                     <option value="USER">USER</option>
                     <option value="SHURA">SHURA</option>
                     <option value="KHALIFA">KHALIFA</option>
+                    <option value="MUHTASIB">MUHTASIB</option>
                   </select>
                   <button
                     @click="assignRole(u)"
@@ -381,6 +382,7 @@ function txBadge(type) {
 function roleBadge(role) {
   if (role === "KHALIFA") return "bg-amber-100 text-amber-800";
   if (role === "SHURA") return "bg-khilafat-100 text-khilafat-800";
+  if (role === "MUHTASIB") return "bg-green-100 text-green-800";
   return "bg-gray-100 text-gray-600";
 }
 

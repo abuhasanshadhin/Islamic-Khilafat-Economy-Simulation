@@ -38,7 +38,7 @@ function makeHisbahController(dataSource, io) {
     try {
       const user = req.user;
       if (!user) return res.status(401).json({ error: 'Unauthorized' });
-      if (user.role !== 'SHURA' && user.role !== 'KHALIFA') return res.status(403).json({ error: 'Forbidden' });
+      if (user.role !== 'SHURA' && user.role !== 'KHALIFA' && user.role !== 'MUHTASIB') return res.status(403).json({ error: 'Forbidden' });
 
       const reports = await dataSource.getRepository(ReportEntity).find({
         where: { status: 'OPEN' },
@@ -73,7 +73,7 @@ function makeHisbahController(dataSource, io) {
     try {
       const user = req.user;
       if (!user) return res.status(401).json({ error: 'Unauthorized' });
-      if (user.role !== 'SHURA' && user.role !== 'KHALIFA') return res.status(403).json({ error: 'Forbidden' });
+      if (user.role !== 'SHURA' && user.role !== 'KHALIFA' && user.role !== 'MUHTASIB') return res.status(403).json({ error: 'Forbidden' });
 
       const id = Number(req.params.id);
       const rep = await dataSource.getRepository(ReportEntity).findOneBy({ id });
@@ -93,7 +93,7 @@ function makeHisbahController(dataSource, io) {
     try {
       const user = req.user;
       if (!user) return res.status(401).json({ error: 'Unauthorized' });
-      if (user.role !== 'SHURA' && user.role !== 'KHALIFA') return res.status(403).json({ error: 'Forbidden' });
+      if (user.role !== 'SHURA' && user.role !== 'KHALIFA' && user.role !== 'MUHTASIB') return res.status(403).json({ error: 'Forbidden' });
 
       const id = Number(req.params.id);
       await dataSource.getRepository(ReportEntity).update({ id }, { status: 'RESOLVED' });
@@ -108,7 +108,7 @@ function makeHisbahController(dataSource, io) {
     try {
       const user = req.user;
       if (!user) return res.status(401).json({ error: 'Unauthorized' });
-      if (user.role !== 'SHURA' && user.role !== 'KHALIFA') return res.status(403).json({ error: 'Forbidden' });
+      if (user.role !== 'SHURA' && user.role !== 'KHALIFA' && user.role !== 'MUHTASIB') return res.status(403).json({ error: 'Forbidden' });
 
       const accusedId = Number(req.params.accusedId);
       await calculateReputation(dataSource, io, accusedId);

@@ -12,7 +12,7 @@ const UserEntity = new EntitySchema({
     goldBalance: { type: 'bigint', default: 0, transformer: bigIntTransformer },
     reputationScore: { type: 'int', default: 0 },
     isZakatEligible: { type: 'boolean', default: false },
-    role: { type: 'enum', enum: ['USER', 'SHURA', 'KHALIFA'], default: 'USER' },
+    role: { type: 'enum', enum: ['USER', 'SHURA', 'KHALIFA', 'MUHTASIB'], default: 'USER' },
     createdAt: { type: 'timestamp', createDate: true },
   },
   relations: {

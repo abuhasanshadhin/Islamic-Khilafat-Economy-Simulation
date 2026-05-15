@@ -165,7 +165,7 @@ function makeUserRoutes(dataSource, authenticateToken, io) {
     }
   });
 
-  // KHALIFA only: assign/change a user's role
+  // KHALIFA only: assign/change a user's role, including MUHTASIB as part of Khilafat governance
   router.post('/assign-role', authenticateToken, async (req, res) => {
     try {
       const { role: callerRole } = req.user;
@@ -173,8 +173,8 @@ function makeUserRoutes(dataSource, authenticateToken, io) {
 
       const { userId, role } = req.body;
       if (!userId || !role) return res.status(400).json({ error: 'userId and role are required' });
-      if (!['USER', 'SHURA', 'KHALIFA'].includes(role)) {
-        return res.status(400).json({ error: 'Invalid role. Must be USER, SHURA, or KHALIFA' });
+      if (!['USER', 'SHURA', 'KHALIFA', 'MUHTASIB'].includes(role)) {
+        return res.status(400).json({ error: 'Invalid role. Must be USER, SHURA, KHALIFA, or MUHTASIB' });
       }
 
       const target = await dataSource.getRepository(UserEntity).findOneBy({ id: userId });
