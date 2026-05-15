@@ -230,6 +230,12 @@ function authHeader() {
   return { Authorization: `Bearer ${localStorage.getItem("token") || ""}` };
 }
 
+function getApiErrorMessage(error, fallback) {
+  const raw = error.response?.data?.error;
+  if (Array.isArray(raw)) return raw.map(issue => issue.message).join(". ");
+  return raw || fallback;
+}
+
 async function loadReports() {
   if (!isShuraOrKhalifa.value) return;
   try {
@@ -252,7 +258,7 @@ async function submitReport() {
     reportMsg.value = { ok: true, text: "Report submitted. The Shura Council will review it." };
     reportForm.value = { accusedUsername: '', reason: '' };
   } catch (e) {
-    const msg = e.response?.data?.error || "Failed to submit report.";
+    const msg = getApiErrorMessage(e, "Failed to submit report.");
     reportMsg.value = { ok: false, text: msg };
   } finally {
     reportSubmitting.value = false;
@@ -301,7 +307,7 @@ async function approveGrant() {
     );
     grantMsg.value = { ok: true, text: `Grant approved: ${res.data.usersGranted} users received ${grantAmount.value}mg each.` };
   } catch (e) {
-    const msg = e.response?.data?.error || "Failed to approve grant.";
+    const msg = getApiErrorMessage(e, "Failed to approve grant.");
     grantMsg.value = { ok: false, text: msg };
   } finally {
     grantLoading.value = false;

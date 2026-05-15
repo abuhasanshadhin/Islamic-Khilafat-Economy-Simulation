@@ -36,4 +36,4 @@ async function paginate(repository, opts = {}) {
   return { items, total, page, limit }
 }
 
-module.exports = { paginate }
+module.exports = { paginate, parsePaginationParams }
