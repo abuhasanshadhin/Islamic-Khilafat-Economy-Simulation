@@ -15,6 +15,11 @@ socket.on('connect', () => {
     }
 })
 
+socket.on('balance_updated', (payload) => {
+    const store = useStore()
+    if (payload.goldBalance !== undefined) store.setUser({ goldBalance: payload.goldBalance })
+})
+
 socket.on('state_reserves_updated', (payload) => {
     const store = useStore()
     store.setBaitulMal({

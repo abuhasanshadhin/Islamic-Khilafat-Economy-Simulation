@@ -2,6 +2,7 @@ const { reportSchema } = require('../validation/hisbahSchema');
 const { calculateReputation } = require('../services/reputationService');
 const { UserEntity } = require('../entities/User');
 const { ReportEntity } = require('../entities/Report');
+const { In } = require('typeorm');
 
 function makeHisbahController(dataSource, io) {
   async function report(req, res) {
@@ -10,21 +11,22 @@ function makeHisbahController(dataSource, io) {
       const reporterId = req.user && req.user.userId;
       if (!reporterId) return res.status(401).json({ error: 'Unauthorized' });
 
-      const accused = await dataSource.getRepository(UserEntity).findOneBy({ id: data.accusedId });
-      if (!accused) return res.status(404).json({ error: 'Accused user not found' });
+      const accused = await dataSource.getRepository(UserEntity).findOneBy({ username: data.accusedUsername });
+      if (!accused) return res.status(404).json({ error: `User "${data.accusedUsername}" not found` });
+      if (accused.id === reporterId) return res.status(400).json({ error: 'You cannot report yourself' });
 
       const created = await dataSource.getRepository(ReportEntity).save({
         reporterId,
-        accusedId: data.accusedId,
+        accusedId: accused.id,
         reason: data.reason,
         status: data.markValid ? 'VALID' : 'OPEN',
       });
 
       if (data.markValid) {
-        await calculateReputation(dataSource, io, data.accusedId);
+        await calculateReputation(dataSource, io, accused.id);
       }
 
-      return res.status(201).json({ success: true, reportId: created.id });
+      return res.status(201).json({ success: true, reportId: created.id, accusedUsername: accused.username });
     } catch (err) {
       if (err && err.name === 'ZodError') return res.status(400).json({ error: err.errors });
       console.error('[hisbah] error', err);
@@ -42,7 +44,25 @@ function makeHisbahController(dataSource, io) {
         where: { status: 'OPEN' },
         order: { createdAt: 'DESC' },
       });
-      res.json(reports);
+
+      // Resolve usernames for all participants
+      const userIds = [...new Set([...reports.map(r => r.reporterId), ...reports.map(r => r.accusedId)])];
+      let usernameMap = {};
+      if (userIds.length > 0) {
+        const users = await dataSource.getRepository(UserEntity).findBy({ id: In(userIds) });
+        users.forEach(u => { usernameMap[u.id] = u.username; });
+      }
+
+      return res.json(reports.map(r => ({
+        id: r.id,
+        reporterId: r.reporterId,
+        reporterUsername: usernameMap[r.reporterId] || `#${r.reporterId}`,
+        accusedId: r.accusedId,
+        accusedUsername: usernameMap[r.accusedId] || `#${r.accusedId}`,
+        reason: r.reason,
+        status: r.status,
+        createdAt: r.createdAt,
+      })));
     } catch (err) {
       console.error('[hisbah] pending error', err);
       res.status(500).json({ error: 'Failed to fetch pending reports' });

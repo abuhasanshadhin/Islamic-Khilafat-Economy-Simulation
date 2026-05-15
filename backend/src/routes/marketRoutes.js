@@ -39,6 +39,43 @@ function makeMarketRoutes(dataSource, io) {
     }
   });
 
+  router.get('/my-products', authenticateToken, async (req, res) => {
+    try {
+      const userId = req.user && req.user.userId;
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+      const products = await dataSource.getRepository(ProductEntity).find({
+        where: { ownerId: userId },
+        order: { id: 'DESC' },
+      });
+      return res.json(products.map(p => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        price: p.price ? p.price.toString() : '0',
+        stock: p.stock,
+      })));
+    } catch (err) {
+      console.error('[marketRoutes] my-products error', err);
+      res.status(500).json({ error: 'Failed to fetch products' });
+    }
+  });
+
+  router.delete('/product/:id', authenticateToken, async (req, res) => {
+    try {
+      const userId = req.user && req.user.userId;
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+      const productId = parseInt(req.params.id, 10);
+      const product = await dataSource.getRepository(ProductEntity).findOneBy({ id: productId });
+      if (!product) return res.status(404).json({ error: 'Product not found' });
+      if (product.ownerId !== userId) return res.status(403).json({ error: 'Not your product' });
+      await dataSource.getRepository(ProductEntity).delete({ id: productId });
+      return res.json({ success: true });
+    } catch (err) {
+      console.error('[marketRoutes] delete product error', err);
+      res.status(500).json({ error: 'Failed to delete product' });
+    }
+  });
+
   router.post('/list', authenticateToken, async (req, res) => {
     try {
       const user = await dataSource.getRepository(UserEntity).findOneBy({ id: req.user.userId });

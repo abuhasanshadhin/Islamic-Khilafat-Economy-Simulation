@@ -58,7 +58,7 @@ const makeHisbahRoutes = require('./src/routes/hisbahRoutes');
 app.use('/api/hisbah', makeHisbahRoutes(AppDataSource, authenticateToken, io));
 
 const makeUserRoutes = require('./src/routes/userRoutes');
-app.use('/api/user', makeUserRoutes(AppDataSource, authenticateToken));
+app.use('/api/user', makeUserRoutes(AppDataSource, authenticateToken, io));
 
 const makeStateRoutes = require('./src/routes/stateRoutes');
 app.use('/api/state', makeStateRoutes(AppDataSource, authenticateToken));

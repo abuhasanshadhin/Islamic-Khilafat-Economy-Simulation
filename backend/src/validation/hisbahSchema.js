@@ -1,7 +1,7 @@
 const { z } = require('zod');
 
 const reportSchema = z.object({
-  accusedId: z.coerce.number().int().positive(),
+  accusedUsername: z.string().min(1),
   reason: z.string().min(5),
   markValid: z.boolean().optional()
 });

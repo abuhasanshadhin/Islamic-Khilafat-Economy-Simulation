@@ -47,30 +47,44 @@ function makeTradeController(dataSource, io) {
           type: 'TRADE',
         });
 
-        try {
-          if (io && io.emit) io.emit('transaction_created', {
-            id: createdTx.id,
-            type: createdTx.type,
-            amount: createdTx.amount.toString(),
-            senderId: createdTx.senderId,
-            receiverId: createdTx.receiverId,
-            timestamp: createdTx.timestamp,
-          });
-        } catch (e) {
-          console.warn('Failed to emit transaction_created', e.message || e);
-        }
-
-        return { product, totalPrice, buyerId, sellerId: seller.id };
+        return {
+          product,
+          totalPrice,
+          buyerId,
+          sellerId: seller.id,
+          createdTx,
+          newBuyerBalance: (buyer.goldBalance - totalPrice).toString(),
+          newSellerBalance: (seller.goldBalance + totalPrice).toString(),
+        };
       });
 
       const threshold = BigInt(process.env.HIGH_VALUE_THRESHOLD_MG || '10000');
-      if (result.totalPrice >= threshold && io && io.emit) {
-        io.emit('new_trade_occurred', {
-          productId: result.product.id,
-          totalPrice: result.totalPrice.toString(),
-          buyerId: result.buyerId,
-          sellerId: result.sellerId,
-        });
+
+      try {
+        if (io) {
+          const txPayload = {
+            id: result.createdTx.id,
+            type: result.createdTx.type,
+            amount: result.createdTx.amount.toString(),
+            senderId: result.createdTx.senderId,
+            receiverId: result.createdTx.receiverId,
+            timestamp: result.createdTx.timestamp,
+          };
+          io.to(`user:${result.buyerId}`).emit('transaction_created', txPayload);
+          io.to(`user:${result.sellerId}`).emit('transaction_created', txPayload);
+          io.to(`user:${result.buyerId}`).emit('balance_updated', { goldBalance: result.newBuyerBalance });
+          io.to(`user:${result.sellerId}`).emit('balance_updated', { goldBalance: result.newSellerBalance });
+          if (result.totalPrice >= threshold) {
+            io.emit('new_trade_occurred', {
+              productId: result.product.id,
+              totalPrice: result.totalPrice.toString(),
+              buyerId: result.buyerId,
+              sellerId: result.sellerId,
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to emit trade events', e.message || e);
       }
 
       return res.json({ success: true, productId: result.product.id, totalPrice: result.totalPrice.toString() });

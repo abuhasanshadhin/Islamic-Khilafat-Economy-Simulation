@@ -23,6 +23,8 @@ export const useStore = defineStore('main', {
         stocks: [],          // latest stock list
         transactions: [],
         zakatToast: null,    // { deducted, newBalance } — cleared after display
+        marketRefreshKey: 0, // incremented on new market listing
+        stockRefreshKey: 0,  // incremented on share change / dividend
     }),
     getters: {
         totalUserGold: (state) => {

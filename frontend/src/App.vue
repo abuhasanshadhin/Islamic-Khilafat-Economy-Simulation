@@ -35,6 +35,11 @@
             active-class="nav-active"
           >Shura</router-link>
           <router-link
+            to="/members"
+            class="px-4 py-2 rounded-lg text-sm font-medium text-khilafat-200 hover:text-white hover:bg-khilafat-700 transition-colors"
+            active-class="nav-active"
+          >Members</router-link>
+          <router-link
             v-if="isKhalifa"
             to="/admin"
             class="px-4 py-2 rounded-lg text-sm font-medium text-khilafat-200 hover:text-white hover:bg-khilafat-700 transition-colors"

@@ -1,9 +1,92 @@
 const express = require('express');
 const router = express.Router();
 const { UserEntity } = require('../entities/User');
+const { ProductEntity } = require('../entities/Product');
 const { TransactionEntity } = require('../entities/Transaction');
+const { Like } = require('typeorm');
 
-function makeUserRoutes(dataSource, authenticateToken) {
+function makeUserRoutes(dataSource, authenticateToken, io) {
+  // Community member directory — all authenticated users
+  router.get('/directory', authenticateToken, async (req, res) => {
+    try {
+      const users = await dataSource.getRepository(UserEntity).find({
+        select: ['id', 'username', 'role', 'reputationScore', 'goldBalance', 'createdAt'],
+        order: { reputationScore: 'DESC' },
+      });
+      return res.json(users.map(u => ({
+        id: u.id,
+        username: u.username,
+        role: u.role,
+        reputationScore: u.reputationScore,
+        goldBalance: u.goldBalance ? u.goldBalance.toString() : '0',
+        memberSince: u.createdAt || null,
+      })));
+    } catch (err) {
+      console.error('[userRoutes] /directory error', err);
+      res.status(500).json({ error: 'Failed to fetch directory' });
+    }
+  });
+
+  // Public profile by username — includes their active listings
+  router.get('/profile/:username', authenticateToken, async (req, res) => {
+    try {
+      const user = await dataSource.getRepository(UserEntity).findOne({
+        select: ['id', 'username', 'role', 'reputationScore', 'goldBalance', 'createdAt'],
+        where: { username: req.params.username },
+      });
+      if (!user) return res.status(404).json({ error: 'User not found' });
+
+      const products = await dataSource.getRepository(ProductEntity).find({
+        where: { ownerId: user.id },
+        order: { id: 'DESC' },
+      });
+
+      return res.json({
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        reputationScore: user.reputationScore,
+        goldBalance: user.goldBalance ? user.goldBalance.toString() : '0',
+        memberSince: user.createdAt || null,
+        listings: products.map(p => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          price: p.price ? p.price.toString() : '0',
+          stock: p.stock,
+        })),
+      });
+    } catch (err) {
+      console.error('[userRoutes] /profile error', err);
+      res.status(500).json({ error: 'Failed to fetch profile' });
+    }
+  });
+
+  // Public username search — returns only safe public fields, excludes caller
+  router.get('/search', authenticateToken, async (req, res) => {
+    try {
+      const q = String(req.query.q || '').trim();
+      if (q.length < 1) return res.json([]);
+      const callerId = req.user && req.user.userId;
+
+      const users = await dataSource.getRepository(UserEntity).find({
+        select: ['id', 'username', 'reputationScore', 'role'],
+        where: { username: Like(`%${q}%`) },
+        order: { username: 'ASC' },
+        take: 8,
+      });
+
+      return res.json(
+        users
+          .filter(u => u.id !== callerId)
+          .map(u => ({ id: u.id, username: u.username, reputationScore: u.reputationScore, role: u.role }))
+      );
+    } catch (err) {
+      console.error('[userRoutes] /search error', err);
+      res.status(500).json({ error: 'Search failed' });
+    }
+  });
+
   // Get current user profile (used for store rehydration on page refresh)
   router.get('/me', authenticateToken, async (req, res) => {
     try {
@@ -94,6 +177,70 @@ function makeUserRoutes(dataSource, authenticateToken) {
     } catch (err) {
       console.error('[userRoutes] /all error', err);
       res.status(500).json({ error: 'Failed to fetch users' });
+    }
+  });
+
+  // Transfer gold to another user by username
+  router.post('/transfer', authenticateToken, async (req, res) => {
+    try {
+      const senderId = req.user && req.user.userId;
+      if (!senderId) return res.status(401).json({ error: 'Unauthorized' });
+
+      const { receiverUsername, amountGrams } = req.body;
+      if (!receiverUsername || !amountGrams) return res.status(400).json({ error: 'receiverUsername and amountGrams are required' });
+
+      const amountMg = BigInt(Math.round(Number(amountGrams) * 1000));
+      if (amountMg <= 0n) return res.status(400).json({ error: 'Amount must be positive' });
+
+      const result = await dataSource.transaction(async (manager) => {
+        const sender = await manager.findOneBy(UserEntity, { id: senderId });
+        if (!sender) throw { status: 404, message: 'Sender not found' };
+
+        const receiver = await manager.findOneBy(UserEntity, { username: receiverUsername });
+        if (!receiver) throw { status: 404, message: `User "${receiverUsername}" not found` };
+        if (receiver.id === senderId) throw { status: 400, message: 'Cannot transfer to yourself' };
+        if (sender.goldBalance < amountMg) throw { status: 400, message: 'Insufficient gold balance' };
+
+        const newSenderBalance = (sender.goldBalance - amountMg).toString();
+        const newReceiverBalance = (receiver.goldBalance + amountMg).toString();
+
+        await manager.update(UserEntity, { id: senderId }, { goldBalance: newSenderBalance });
+        await manager.update(UserEntity, { id: receiver.id }, { goldBalance: newReceiverBalance });
+
+        const tx = await manager.save(TransactionEntity, {
+          senderId,
+          receiverId: receiver.id,
+          amount: amountMg,
+          type: 'TRANSFER',
+        });
+
+        return { tx, newSenderBalance, newReceiverBalance, receiverId: receiver.id };
+      });
+
+      try {
+        if (io) {
+          const txPayload = {
+            id: result.tx.id,
+            type: 'TRANSFER',
+            amount: amountMg.toString(),
+            senderId,
+            receiverId: result.receiverId,
+            timestamp: result.tx.timestamp,
+          };
+          io.to(`user:${senderId}`).emit('transaction_created', txPayload);
+          io.to(`user:${result.receiverId}`).emit('transaction_created', txPayload);
+          io.to(`user:${senderId}`).emit('balance_updated', { goldBalance: result.newSenderBalance });
+          io.to(`user:${result.receiverId}`).emit('balance_updated', { goldBalance: result.newReceiverBalance });
+        }
+      } catch (e) {
+        console.warn('transfer socket emit failed', e.message || e);
+      }
+
+      return res.json({ success: true, amount: amountMg.toString(), receiverUsername });
+    } catch (err) {
+      if (err && err.status) return res.status(err.status).json({ error: err.message });
+      console.error('[userRoutes] /transfer error', err);
+      res.status(500).json({ error: 'Transfer failed' });
     }
   });
 

@@ -134,30 +134,165 @@
         </div>
       </div>
     </div>
+
+    <!-- My Listings -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-base font-semibold text-gray-900">My Listings</h2>
+          <p class="text-xs text-gray-400 mt-0.5">Products you have listed in the marketplace</p>
+        </div>
+        <span class="text-xs text-gray-400">{{ myProducts.length }} active</span>
+      </div>
+      <div v-if="myProducts.length === 0" class="text-center py-8 text-sm text-gray-400">
+        <div class="text-3xl mb-2">🏪</div>
+        <p>No active listings.</p>
+        <router-link to="/marketplace" class="text-khilafat-600 hover:underline text-xs mt-1 inline-block">Go to Marketplace to list an item →</router-link>
+      </div>
+      <div v-else class="space-y-2">
+        <div
+          v-for="p in myProducts"
+          :key="p.id"
+          class="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg border border-gray-100"
+        >
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-semibold text-gray-900 truncate">{{ p.name }}</div>
+            <div class="text-xs text-gray-400 mt-0.5">{{ formatAmount(p.price) }} · {{ p.stock }} in stock</div>
+          </div>
+          <button
+            @click="delistProduct(p.id)"
+            class="ml-4 px-3 py-1 text-xs text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors shrink-0"
+          >Remove</button>
+        </div>
+      </div>
+      <div v-if="listingMsg" class="mt-3 text-xs px-3 py-2 rounded-lg border" :class="listingMsg.ok ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'">
+        {{ listingMsg.text }}
+      </div>
+    </div>
+
+    <!-- Send Gold -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+      <h2 class="text-base font-semibold text-gray-900 mb-1">Send Gold</h2>
+      <p class="text-xs text-gray-400 mb-4">Transfer gold directly to any member of the Ummah</p>
+      <form @submit.prevent="sendGold" class="flex flex-wrap gap-3 items-end">
+        <div class="flex-1 min-w-40 relative">
+          <label class="text-xs font-medium text-gray-600 block mb-1">Recipient username</label>
+          <input
+            v-model="transfer.username"
+            @input="onUsernameInput"
+            @blur="hideDropdownSoon"
+            autocomplete="off"
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-400 focus:border-transparent"
+            placeholder="Start typing a username…"
+            required
+          />
+          <!-- Autocomplete dropdown -->
+          <div
+            v-if="userSuggestions.length > 0"
+            class="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden"
+          >
+            <button
+              v-for="u in userSuggestions"
+              :key="u.id"
+              type="button"
+              @mousedown.prevent="selectUser(u)"
+              class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-khilafat-50 transition-colors text-left"
+            >
+              <div class="w-7 h-7 rounded-full bg-khilafat-100 flex items-center justify-center text-khilafat-700 font-bold text-xs shrink-0">
+                {{ u.username[0].toUpperCase() }}
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-semibold text-gray-900">{{ u.username }}</div>
+                <div class="text-xs text-gray-400">Rep {{ u.reputationScore }} · {{ u.role }}</div>
+              </div>
+            </button>
+          </div>
+        </div>
+        <div class="w-40">
+          <label class="text-xs font-medium text-gray-600 block mb-1">Amount (g)</label>
+          <input
+            v-model.number="transfer.amountGrams"
+            type="number"
+            step="0.001"
+            min="0.001"
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-400 focus:border-transparent"
+            placeholder="0.000"
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          :disabled="transferLoading"
+          class="px-5 py-2 bg-khilafat-700 hover:bg-khilafat-600 disabled:opacity-60 text-white font-semibold rounded-lg text-sm transition-colors"
+        >{{ transferLoading ? 'Sending…' : '↗ Send' }}</button>
+      </form>
+      <div v-if="transferMsg" class="mt-3 text-xs px-3 py-2 rounded-lg border" :class="transferMsg.ok ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'">
+        {{ transferMsg.text }}
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { useStore } from '../stores/useStore'
 
 const store = useStore()
+const route = useRoute()
 const user = computed(() => store.user)
 const transactions = computed(() => store.transactions)
+
+const myProducts = ref([])
+const listingMsg = ref(null)
+
+const transfer = ref({ username: '', amountGrams: null })
+const transferLoading = ref(false)
+const transferMsg = ref(null)
+const userSuggestions = ref([])
+let searchTimer = null
+
+function onUsernameInput() {
+  clearTimeout(searchTimer)
+  const q = transfer.value.username.trim()
+  if (q.length < 1) { userSuggestions.value = []; return }
+  searchTimer = setTimeout(async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const res = await axios.get(`/api/user/search?q=${encodeURIComponent(q)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      userSuggestions.value = res.data
+    } catch { userSuggestions.value = [] }
+  }, 250)
+}
+
+function selectUser(u) {
+  transfer.value.username = u.username
+  userSuggestions.value = []
+}
+
+function hideDropdownSoon() {
+  setTimeout(() => { userSuggestions.value = [] }, 150)
+}
 
 onMounted(async () => {
   const token = localStorage.getItem('token')
   if (!token) return
   try {
-    const [meRes, txRes, pricesRes] = await Promise.all([
+    const [meRes, txRes, pricesRes, myProductsRes] = await Promise.all([
       axios.get('/api/user/me', { headers: { Authorization: `Bearer ${token}` } }),
       axios.get('/api/user/transactions', { headers: { Authorization: `Bearer ${token}` } }),
       axios.get('/api/market/prices'),
+      axios.get('/api/market/my-products', { headers: { Authorization: `Bearer ${token}` } }),
     ])
     store.setUser({ ...meRes.data, token })
     txRes.data.forEach(tx => store.addTransaction(tx))
     store.setPrices(pricesRes.data)
+    myProducts.value = myProductsRes.data
+    // Pre-fill Send Gold if navigated from a profile page
+    if (route.query.sendTo) transfer.value.username = String(route.query.sendTo)
   } catch (e) {
     console.warn('Dashboard fetch', e)
   }
@@ -204,4 +339,35 @@ const txTypeMap = {
 }
 function txClass(type) { return (txTypeMap[type] || txTypeMap.TRANSFER).bg }
 function txIcon(type)  { return (txTypeMap[type] || txTypeMap.TRANSFER).icon }
+
+async function delistProduct(productId) {
+  const token = localStorage.getItem('token')
+  try {
+    await axios.delete(`/api/market/product/${productId}`, { headers: { Authorization: `Bearer ${token}` } })
+    myProducts.value = myProducts.value.filter(p => p.id !== productId)
+    listingMsg.value = { ok: true, text: 'Listing removed' }
+  } catch (e) {
+    listingMsg.value = { ok: false, text: e.response?.data?.error || 'Failed to remove listing' }
+  }
+  setTimeout(() => (listingMsg.value = null), 3000)
+}
+
+async function sendGold() {
+  transferLoading.value = true
+  transferMsg.value = null
+  const token = localStorage.getItem('token')
+  try {
+    await axios.post(
+      '/api/user/transfer',
+      { receiverUsername: transfer.value.username, amountGrams: transfer.value.amountGrams },
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    transferMsg.value = { ok: true, text: `Sent ${transfer.value.amountGrams} g to ${transfer.value.username}` }
+    transfer.value = { username: '', amountGrams: null }
+  } catch (e) {
+    transferMsg.value = { ok: false, text: e.response?.data?.error || 'Transfer failed' }
+  }
+  transferLoading.value = false
+  setTimeout(() => (transferMsg.value = null), 4000)
+}
 </script>

@@ -13,6 +13,7 @@ const UserEntity = new EntitySchema({
     reputationScore: { type: 'int', default: 0 },
     isZakatEligible: { type: 'boolean', default: false },
     role: { type: 'enum', enum: ['USER', 'SHURA', 'KHALIFA'], default: 'USER' },
+    createdAt: { type: 'timestamp', createDate: true },
   },
   relations: {
     sentTransactions: { type: 'one-to-many', target: 'Transaction', inverseSide: 'sender' },

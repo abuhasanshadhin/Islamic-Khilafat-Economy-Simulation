@@ -11,16 +11,38 @@
       <h2 class="text-base font-semibold text-gray-900 mb-1">File a Hisbah Report</h2>
       <p class="text-xs text-gray-400 mb-4">Report unfair or fraudulent conduct to the Shura Council</p>
       <form @submit.prevent="submitReport" class="flex flex-wrap gap-3 items-end">
-        <div class="flex-1 min-w-35">
-          <label class="text-xs font-medium text-gray-600 block mb-1">Accused User ID</label>
+        <div class="flex-1 min-w-48 relative">
+          <label class="text-xs font-medium text-gray-600 block mb-1">Accused Member</label>
           <input
-            v-model.number="reportForm.accusedId"
-            type="number"
-            min="1"
+            v-model="reportForm.accusedUsername"
+            @input="onAccusedInput"
+            @blur="hideAccusedDropdownSoon"
+            autocomplete="off"
             required
             class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-400 focus:border-transparent"
-            placeholder="User ID"
+            placeholder="Start typing a username…"
           />
+          <!-- Autocomplete dropdown -->
+          <div
+            v-if="accusedSuggestions.length > 0"
+            class="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden"
+          >
+            <button
+              v-for="u in accusedSuggestions"
+              :key="u.id"
+              type="button"
+              @mousedown.prevent="selectAccused(u)"
+              class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-red-50 transition-colors text-left"
+            >
+              <div class="w-7 h-7 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-bold text-xs shrink-0">
+                {{ u.username[0].toUpperCase() }}
+              </div>
+              <div>
+                <div class="text-sm font-semibold text-gray-900">{{ u.username }}</div>
+                <div class="text-xs text-gray-400">Rep {{ u.reputationScore }} · {{ u.role }}</div>
+              </div>
+            </button>
+          </div>
         </div>
         <div class="flex-3 min-w-50">
           <label class="text-xs font-medium text-gray-600 block mb-1">Reason</label>
@@ -72,11 +94,11 @@
             <div class="flex-1 min-w-0">
               <div class="flex items-center flex-wrap gap-2 mb-1.5">
                 <span class="inline-flex items-center gap-1 text-xs font-medium text-gray-600 bg-gray-200 rounded-full px-2 py-0.5">
-                  Reporter #{{ r.reporterId }}
+                  Reporter: {{ r.reporterUsername }}
                 </span>
                 <span class="text-gray-400 text-xs">→</span>
                 <span class="inline-flex items-center gap-1 text-xs font-semibold text-red-700 bg-red-100 rounded-full px-2 py-0.5">
-                  Accused #{{ r.accusedId }}
+                  Accused: {{ r.accusedUsername }}
                 </span>
                 <span class="text-xs text-gray-400 ml-auto">Report #{{ r.id }}</span>
               </div>
@@ -168,9 +190,32 @@ const isShuraOrKhalifa = computed(() => ['SHURA', 'KHALIFA'].includes(store.user
 const reports = ref([]);
 
 // Report form
-const reportForm = ref({ accusedId: null, reason: "" });
+const reportForm = ref({ accusedUsername: '', reason: '' });
 const reportSubmitting = ref(false);
 const reportMsg = ref(null);
+const accusedSuggestions = ref([]);
+let accusedSearchTimer = null;
+
+function onAccusedInput() {
+  clearTimeout(accusedSearchTimer);
+  const q = reportForm.value.accusedUsername.trim();
+  if (q.length < 1) { accusedSuggestions.value = []; return; }
+  accusedSearchTimer = setTimeout(async () => {
+    try {
+      const res = await axios.get(`/api/user/search?q=${encodeURIComponent(q)}`, { headers: authHeader() });
+      accusedSuggestions.value = res.data;
+    } catch { accusedSuggestions.value = []; }
+  }, 250);
+}
+
+function selectAccused(u) {
+  reportForm.value.accusedUsername = u.username;
+  accusedSuggestions.value = [];
+}
+
+function hideAccusedDropdownSoon() {
+  setTimeout(() => { accusedSuggestions.value = []; }, 150);
+}
 
 // Grant
 const grantAmount = ref(1000);
@@ -201,11 +246,11 @@ async function submitReport() {
   try {
     await axios.post(
       "/api/hisbah/report",
-      { accusedId: reportForm.value.accusedId, reason: reportForm.value.reason },
+      { accusedUsername: reportForm.value.accusedUsername, reason: reportForm.value.reason },
       { headers: authHeader() }
     );
     reportMsg.value = { ok: true, text: "Report submitted. The Shura Council will review it." };
-    reportForm.value = { accusedId: null, reason: "" };
+    reportForm.value = { accusedUsername: '', reason: '' };
   } catch (e) {
     const msg = e.response?.data?.error || "Failed to submit report.";
     reportMsg.value = { ok: false, text: msg };

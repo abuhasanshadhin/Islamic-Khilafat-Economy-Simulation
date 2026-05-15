@@ -155,7 +155,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useStore } from "../stores/useStore";
 import socket from "../socket";
 import axios from "axios";
@@ -292,6 +292,8 @@ async function listItem() {
 onMounted(() => {
   loadProducts();
 });
+
+watch(() => store.marketRefreshKey, loadProducts);
 </script>
 
 <style scoped>
