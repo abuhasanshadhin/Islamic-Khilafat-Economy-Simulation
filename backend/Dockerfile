@@ -1,7 +1,7 @@
 FROM node:20-alpine
 WORKDIR /app
 
-# Copy package files and install all dependencies (including prisma for migrations)
+# Copy package files and install all dependencies
 COPY package.json package-lock.json* ./
 RUN npm install
 

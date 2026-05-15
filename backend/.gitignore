@@ -13,7 +13,7 @@ package-lock.json
 .env.production
 .env.staging
 
-# Prisma generated client
+# Generated sources
 src/generated
 
 # Logs
