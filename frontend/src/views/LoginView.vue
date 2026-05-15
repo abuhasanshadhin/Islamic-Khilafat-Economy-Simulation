@@ -1,30 +1,34 @@
 <template>
-  <div class="min-h-[75vh] flex items-center justify-center px-4">
+  <div
+    class="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12"
+  >
     <div
-      class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md overflow-hidden"
+      class="w-full max-w-md rounded-4xl overflow-hidden shadow-2xl border border-slate-200 bg-white"
     >
-      <!-- Top banner -->
-      <div class="bg-khilafat-900 px-8 py-7 text-center">
-        <div
-          class="w-16 h-16 rounded-2xl bg-amber-500 flex items-center justify-center text-3xl font-bold text-khilafat-900 mx-auto mb-3 select-none"
-        >
-          ب
+      <div
+        class="bg-linear-to-br from-khilafat-900 via-slate-900 to-khilafat-800 px-8 py-6 text-center text-white"
+      >
+        <div class="flex items-center justify-center mx-auto mb-3 shadow-inner">
+          <div
+            class="w-14 rounded-3xl bg-amber-400 text-2xl font-bold text-khilafat-900"
+          >
+            ب
+          </div>
         </div>
-        <h1 class="text-xl font-bold text-white">BaitulMal</h1>
-        <p class="text-sm text-khilafat-300 mt-1">Islamic Digital Treasury</p>
-        <p class="text-xs text-khilafat-200 mt-2 max-w-sm mx-auto">
-          Sign in or register to participate in the halal economy, report
-          marketplace issues, and manage your gold.
-        </p>
-        <div class="flex bg-gray-100 rounded-xl p-1 mb-6">
+        <h1 class="text-xl font-semibold">BaitulMal</h1>
+        <p class="mt-1 text-sm text-slate-200">Islamic Digital Treasury</p>
+      </div>
+
+      <div class="px-8 py-6">
+        <div class="flex gap-2 bg-slate-100 rounded-3xl p-1 mb-6">
           <button
             @click="mode = 'login'"
             :class="
               mode === 'login'
-                ? 'bg-white shadow-sm text-khilafat-800 font-semibold'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-white shadow-sm text-khilafat-900 font-semibold'
+                : 'text-slate-500 hover:text-slate-700'
             "
-            class="flex-1 py-2 text-sm rounded-lg transition-all"
+            class="flex-1 rounded-3xl py-2 text-sm transition-all"
           >
             Sign In
           </button>
@@ -32,19 +36,18 @@
             @click="mode = 'register'"
             :class="
               mode === 'register'
-                ? 'bg-white shadow-sm text-khilafat-800 font-semibold'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-white shadow-sm text-khilafat-900 font-semibold'
+                : 'text-slate-500 hover:text-slate-700'
             "
-            class="flex-1 py-2 text-sm rounded-lg transition-all"
+            class="flex-1 rounded-3xl py-2 text-sm transition-all"
           >
             Register
           </button>
         </div>
 
-        <form @submit.prevent="submit" class="space-y-4">
-          <!-- Username (register only) -->
-          <div v-if="mode === 'register'">
-            <label class="text-xs font-semibold text-gray-600 block mb-1.5"
+        <form @submit.prevent="submit" class="space-y-5">
+          <div v-if="mode === 'register'" class="space-y-2">
+            <label class="text-xs font-semibold text-slate-600 block"
               >Username</label
             >
             <input
@@ -52,14 +55,13 @@
               type="text"
               autocomplete="username"
               required
-              class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-500 focus:border-transparent transition-all"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-khilafat-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-khilafat-200 transition"
               placeholder="your_username"
             />
           </div>
 
-          <!-- Email -->
-          <div>
-            <label class="text-xs font-semibold text-gray-600 block mb-1.5"
+          <div class="space-y-2">
+            <label class="text-xs font-semibold text-slate-600 block"
               >Email</label
             >
             <input
@@ -67,14 +69,13 @@
               type="email"
               autocomplete="email"
               required
-              class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-500 focus:border-transparent transition-all"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-khilafat-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-khilafat-200 transition"
               placeholder="you@example.com"
             />
           </div>
 
-          <!-- Password -->
-          <div>
-            <label class="text-xs font-semibold text-gray-600 block mb-1.5"
+          <div class="space-y-2">
+            <label class="text-xs font-semibold text-slate-600 block"
               >Password</label
             >
             <input
@@ -82,24 +83,22 @@
               type="password"
               autocomplete="current-password"
               required
-              class="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-500 focus:border-transparent transition-all"
+              class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-khilafat-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-khilafat-200 transition"
               placeholder="••••••••"
             />
           </div>
 
-          <!-- Error -->
           <div
             v-if="error"
-            class="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700"
+            class="rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-700"
           >
-            <span>⚠</span><span>{{ error }}</span>
+            {{ error }}
           </div>
 
-          <!-- Submit -->
           <button
             type="submit"
             :disabled="loading"
-            class="w-full py-3 bg-khilafat-700 hover:bg-khilafat-600 disabled:opacity-60 text-white font-semibold rounded-xl text-sm transition-colors mt-2"
+            class="w-full rounded-2xl bg-khilafat-700 py-3 text-sm font-semibold text-white shadow-lg shadow-khilafat-500/10 transition hover:bg-khilafat-600 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {{
               loading

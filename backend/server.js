@@ -69,8 +69,8 @@ app.use('/api/trade', makeTradeRoutes(AppDataSource, authenticateToken, io));
 const makeMarketRoutes = require('./src/routes/marketRoutes');
 app.use('/api/market', makeMarketRoutes(AppDataSource, io));
 
-const makeStockRoutes = require('./src/routes/stockRoutes');
-app.use('/api/stock', makeStockRoutes(AppDataSource, authenticateToken, io));
+const makePartnershipRoutes = require('./src/routes/partnershipRoutes');
+app.use('/api/partnership', makePartnershipRoutes(AppDataSource, authenticateToken, io));
 
 const PORT = process.env.PORT || 3000;
 

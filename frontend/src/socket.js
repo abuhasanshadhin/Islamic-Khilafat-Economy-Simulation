@@ -85,7 +85,7 @@ socket.on('market:product-updated', () => {
     store.marketRefreshKey = (store.marketRefreshKey ?? 0) + 1
 })
 
-socket.on('stock:new-listing', () => {
+socket.on('partnership:new-listing', () => {
     const store = useStore()
     store.stockRefreshKey = (store.stockRefreshKey ?? 0) + 1
 })

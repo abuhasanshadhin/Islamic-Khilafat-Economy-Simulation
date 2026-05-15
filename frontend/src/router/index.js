@@ -5,7 +5,7 @@ import ShuraDashboard from '../views/ShuraDashboard.vue'
 import StateDashboard from '../views/StateDashboard.vue'
 import AdminView from '../views/AdminView.vue'
 import LoginView from '../views/LoginView.vue'
-import StockMarket from '../views/StockMarket.vue'
+import PartnershipMarket from '../views/PartnershipMarket.vue'
 import MemberDirectory from '../views/MemberDirectory.vue'
 import ProfileView from '../views/ProfileView.vue'
 import SendGoldView from '../views/SendGoldView.vue'
@@ -16,7 +16,7 @@ const routes = [
     { path: '/', name: 'Dashboard', component: Dashboard, meta: { requiresAuth: true } },
     { path: '/state', name: 'State', component: StateDashboard },
     { path: '/marketplace', name: 'Marketplace', component: Marketplace },
-    { path: '/stocks', name: 'Stocks', component: StockMarket },
+    { path: '/partnerships', name: 'Partnerships', component: PartnershipMarket },
     { path: '/shura', name: 'Shura', component: ShuraDashboard, meta: { requiresAuth: true, requiresRole: ['SHURA', 'KHALIFA', 'MUHTASIB'] } },
     { path: '/members', name: 'Members', component: MemberDirectory },
     { path: '/profile/:username', name: 'Profile', component: ProfileView },

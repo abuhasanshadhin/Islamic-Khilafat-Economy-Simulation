@@ -2,13 +2,15 @@
   <div class="space-y-6">
     <!-- Header -->
     <div>
-      <h1 class="text-2xl font-bold text-khilafat-900">Stock Market</h1>
+      <h1 class="text-2xl font-bold text-khilafat-900">
+        Khilafat Partnership Market
+      </h1>
       <p class="text-sm text-gray-500 mt-0.5">
-        Halal equity trading — no riba, no speculation
+        Halal Khilafat partnership trading — no riba, no unjust gain
       </p>
       <p class="text-xs text-gray-400 mt-2 max-w-2xl">
-        Trade halal company shares with live prices. Only trusted members with
-        sufficient reputation may launch an IPO.
+        Partner in public Musharaka contracts with live pricing. Only trusted
+        members with sufficient reputation may launch a partnership.
       </p>
     </div>
 
@@ -39,23 +41,25 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <!-- Listed Stocks -->
+      <!-- Listed Partnerships -->
       <div class="lg:col-span-2 space-y-4">
-        <h2 class="text-base font-semibold text-gray-900">Listed Companies</h2>
+        <h2 class="text-base font-semibold text-gray-900">
+          Active Partnerships
+        </h2>
 
         <div
           v-if="stocks.length === 0"
           class="bg-white rounded-xl border border-gray-200 shadow-sm p-12 text-center"
         >
           <div class="text-4xl mb-3">📈</div>
-          <p class="text-gray-500 font-medium">No stocks listed yet</p>
+          <p class="text-gray-500 font-medium">No partnerships listed yet</p>
           <p class="text-sm text-gray-400 mt-1">
             {{
               isLoggedIn
-                ? canIPO
-                  ? "Be the first to go public via IPO"
-                  : "Need reputation > 80 to go public"
-                : "Sign in to trade stocks"
+                ? canLaunchPartnership
+                  ? "Be the first to offer a public partnership"
+                  : "Need reputation > 80 to launch a partnership"
+                : "Sign in to join partnerships"
             }}
           </p>
         </div>
@@ -72,7 +76,7 @@
                   <h3 class="font-bold text-gray-900">{{ s.name }}</h3>
                   <span
                     class="text-xs px-2 py-0.5 rounded-full bg-khilafat-100 text-khilafat-700 font-medium"
-                    >Stock #{{ s.id }}</span
+                    >Partnership #{{ s.id }}</span
                   >
                 </div>
                 <div class="flex flex-wrap gap-4 text-xs text-gray-500 mt-1.5">
@@ -149,7 +153,7 @@
               >
                 <div class="flex flex-col gap-2">
                   <span class="text-xs text-khilafat-600 font-semibold"
-                    >Your stock</span
+                    >Your partnership</span
                   >
                   <div class="flex gap-2 items-center">
                     <input
@@ -173,12 +177,12 @@
         </div>
       </div>
 
-      <!-- Sidebar: IPO Form -->
+      <!-- Sidebar: Partnership Form -->
       <aside class="lg:col-span-1 space-y-4">
-        <!-- IPO Form (rep > 80) -->
+        <!-- Partnership Form (rep > 80) -->
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
           <h3 class="text-base font-semibold text-gray-900 mb-1">
-            Go Public (IPO)
+            Launch Public Partnership
           </h3>
           <p class="text-xs text-gray-400 mb-4">
             Requires reputation score &gt; 80
@@ -188,23 +192,23 @@
             <router-link
               to="/login"
               class="text-sm text-khilafat-600 hover:underline"
-              >Sign in to list stock</router-link
+              >Sign in to offer a partnership</router-link
             >
           </div>
           <div
-            v-else-if="!canIPO"
+            v-else-if="!canLaunchPartnership"
             class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700"
           >
             Your reputation ({{ store.user.reputationScore }}) must exceed 80 to
-            go public.
+            launch a partnership.
           </div>
-          <form v-else @submit.prevent="launchIPO" class="space-y-3">
+          <form v-else @submit.prevent="launchPartnership" class="space-y-3">
             <div>
               <label class="text-xs font-medium text-gray-600 block mb-1"
                 >Company Name</label
               >
               <input
-                v-model="ipoForm.name"
+                v-model="partnershipForm.name"
                 required
                 class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-400 focus:border-transparent"
                 placeholder="Acme Corp"
@@ -215,7 +219,7 @@
                 >Total Shares</label
               >
               <input
-                v-model.number="ipoForm.totalShares"
+                v-model.number="partnershipForm.totalShares"
                 type="number"
                 min="1"
                 required
@@ -228,7 +232,7 @@
                 >Price per share (mg)</label
               >
               <input
-                v-model.number="ipoForm.initialPriceMg"
+                v-model.number="partnershipForm.initialPriceMg"
                 type="number"
                 min="1"
                 required
@@ -238,10 +242,10 @@
             </div>
             <button
               type="submit"
-              :disabled="ipoLoading"
+              :disabled="partnershipLoading"
               class="w-full py-2 bg-khilafat-700 hover:bg-khilafat-600 disabled:opacity-60 text-white font-semibold rounded-lg text-sm transition-colors"
             >
-              {{ ipoLoading ? "Launching…" : "🚀 Launch IPO" }}
+              {{ partnershipLoading ? "Launching…" : "🚀 Launch Partnership" }}
             </button>
           </form>
         </div>
@@ -287,11 +291,17 @@ const stocks = ref([]);
 const myHoldings = ref([]);
 const buyForm = ref({});
 const dividendForm = ref({});
-const ipoForm = ref({ name: "", totalShares: 1000, initialPriceMg: 100 });
-const ipoLoading = ref(false);
+const partnershipForm = ref({
+  name: "",
+  totalShares: 1000,
+  initialPriceMg: 100,
+});
+const partnershipLoading = ref(false);
 
 const isLoggedIn = computed(() => !!store.user.token);
-const canIPO = computed(() => Number(store.user.reputationScore) > 80);
+const canLaunchPartnership = computed(
+  () => Number(store.user.reputationScore) > 80,
+);
 
 function authHeader() {
   return { Authorization: `Bearer ${localStorage.getItem("token") || ""}` };
@@ -321,7 +331,7 @@ function priceEvent(resource) {
 
 async function loadStocks() {
   try {
-    const res = await axios.get("/api/stock");
+    const res = await axios.get("/api/partnership");
     stocks.value = res.data;
     stocks.value.forEach((s) => {
       if (!buyForm.value[s.id]) buyForm.value[s.id] = 1;
@@ -333,7 +343,11 @@ async function loadStocks() {
         .filter((s) => s.holdings?.some((h) => h.userId === store.user.id))
         .map((s) => {
           const h = s.holdings?.find((h) => h.userId === store.user.id);
-          return { stockId: s.id, stockName: s.name, shares: h?.shares ?? 0 };
+          return {
+            partnershipId: s.id,
+            partnershipName: s.name,
+            shares: h?.shares ?? 0,
+          };
         });
     }
   } catch (e) {
@@ -354,8 +368,8 @@ async function buyShares(stock) {
   const shares = buyForm.value[stock.id] || 1;
   try {
     await axios.post(
-      "/api/stock/buy",
-      { stockId: stock.id, shares },
+      "/api/partnership/buy",
+      { partnershipId: stock.id, shares },
       { headers: authHeader() },
     );
     showSuccessToast(`Bought ${shares} shares of ${stock.name}`);
@@ -369,8 +383,8 @@ async function distributeDividends(stock) {
   const totalAmountMg = dividendForm.value[stock.id] || 1000;
   try {
     await axios.post(
-      "/api/stock/distribute",
-      { stockId: stock.id, totalAmountMg },
+      "/api/partnership/distribute",
+      { partnershipId: stock.id, totalAmountMg },
       { headers: authHeader() },
     );
     showSuccessToast(
@@ -382,25 +396,31 @@ async function distributeDividends(stock) {
   }
 }
 
-async function launchIPO() {
-  ipoLoading.value = true;
+async function launchPartnership() {
+  partnershipLoading.value = true;
   try {
     await axios.post(
-      "/api/stock/ipo",
+      "/api/partnership/partnership",
       {
-        name: ipoForm.value.name,
-        totalShares: ipoForm.value.totalShares,
-        initialPriceMg: ipoForm.value.initialPriceMg,
+        name: partnershipForm.value.name,
+        totalShares: partnershipForm.value.totalShares,
+        initialPriceMg: partnershipForm.value.initialPriceMg,
       },
       { headers: authHeader() },
     );
-    showSuccessToast(`${ipoForm.value.name} is now publicly listed!`);
-    ipoForm.value = { name: "", totalShares: 1000, initialPriceMg: 100 };
+    showSuccessToast(
+      `${partnershipForm.value.name} is now publicly offered as a partnership!`,
+    );
+    partnershipForm.value = {
+      name: "",
+      totalShares: 1000,
+      initialPriceMg: 100,
+    };
     loadStocks();
   } catch (e) {
-    showErrorToast(e.response?.data?.error || "IPO failed");
+    showErrorToast(e.response?.data?.error || "Partnership launch failed");
   } finally {
-    ipoLoading.value = false;
+    partnershipLoading.value = false;
   }
 }
 

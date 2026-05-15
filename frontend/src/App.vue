@@ -30,10 +30,10 @@
             >Marketplace</router-link
           >
           <router-link
-            to="/stocks"
+            to="/partnerships"
             class="px-4 py-2 rounded-lg text-sm font-medium text-khilafat-200 hover:text-white hover:bg-khilafat-700 transition-colors"
             active-class="nav-active"
-            >Stocks</router-link
+            >Partnerships</router-link
           >
           <router-link
             v-if="isCouncil"

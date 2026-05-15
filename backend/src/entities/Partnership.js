@@ -1,7 +1,7 @@
 const { EntitySchema } = require('typeorm');
 const { bigIntTransformer } = require('./transformers');
 
-const StockEntity = new EntitySchema({
+const PartnershipEntity = new EntitySchema({
   name: 'Stock',
   tableName: 'Stock',
   columns: {
@@ -25,4 +25,4 @@ const StockEntity = new EntitySchema({
   },
 });
 
-module.exports = { StockEntity };
+module.exports = { PartnershipEntity };

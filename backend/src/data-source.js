@@ -7,7 +7,7 @@ const { MiningLogEntity } = require('./entities/MiningLog');
 const { ReportEntity } = require('./entities/Report');
 const { TransactionEntity } = require('./entities/Transaction');
 const { ResourcePriceEntity } = require('./entities/ResourcePrice');
-const { StockEntity } = require('./entities/Stock');
+const { PartnershipEntity } = require('./entities/Partnership');
 const { ShareOwnershipEntity } = require('./entities/ShareOwnership');
 
 const AppDataSource = new DataSource({
@@ -21,7 +21,7 @@ const AppDataSource = new DataSource({
     ReportEntity,
     TransactionEntity,
     ResourcePriceEntity,
-    StockEntity,
+    PartnershipEntity,
     ShareOwnershipEntity,
   ],
   synchronize: true,
