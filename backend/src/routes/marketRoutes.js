@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
+const { ResourcePriceEntity } = require('../entities/ResourcePrice');
 
-function makeMarketRoutes(prisma, io) {
-  // GET /api/market/prices
+function makeMarketRoutes(dataSource, io) {
   router.get('/prices', async (req, res) => {
     try {
-      const prices = await prisma.resourcePrice.findMany();
+      const prices = await dataSource.getRepository(ResourcePriceEntity).find();
       return res.json(prices.map(p => ({ resource: p.resource, priceInGoldMg: p.priceInGoldMg, updatedAt: p.updatedAt })));
     } catch (err) {
       console.error('[marketRoutes] error', err);

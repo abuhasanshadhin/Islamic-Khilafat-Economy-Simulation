@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
+const { UserEntity } = require('../entities/User');
 
-function makeUserRoutes(prisma, authenticateToken) {
-  // GET /api/user/reputation
+function makeUserRoutes(dataSource, authenticateToken) {
   router.get('/reputation', authenticateToken, async (req, res) => {
     try {
       const userId = req.user && req.user.userId;
       if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
-      const user = await prisma.user.findUnique({ where: { id: userId } });
+      const user = await dataSource.getRepository(UserEntity).findOneBy({ id: userId });
       if (!user) return res.status(404).json({ error: 'User not found' });
 
       const standing = user.reputationScore >= 40 ? 'good' : 'restricted';

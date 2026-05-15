@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 
-function makeHisbahRoutes(prisma, authenticateToken, io) {
+function makeHisbahRoutes(dataSource, authenticateToken, io) {
 
   const makeHisbahController = require('../controllers/hisbahController');
-  const { report, pending, validate, resolve, recalc } = makeHisbahController(prisma, io);
+  const { report, pending, validate, resolve, recalc } = makeHisbahController(dataSource, io);
 
   router.post('/report', authenticateToken, report);
   router.get('/pending', authenticateToken, pending);

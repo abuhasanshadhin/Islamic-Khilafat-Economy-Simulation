@@ -1,101 +1,129 @@
 <template>
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <div class="col-span-2">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div
-          v-for="product in products"
-          :key="product.id"
-          class="p-4 bg-white border rounded-md shadow-sm"
-        >
-          <div class="flex items-start justify-between">
-            <div>
-              <h3 class="font-semibold text-khilafat-700">
-                {{ product.name }}
-              </h3>
-              <div class="text-xs text-gray-500">{{ product.description }}</div>
-            </div>
-            <div class="text-right">
-              <div class="text-lg font-bold text-amber-500">
-                {{ formatPrice(product.price) }} g
-              </div>
-              <div class="text-xs text-gray-500">
-                Stock: {{ product.stock }}
-              </div>
-            </div>
-          </div>
+  <div class="space-y-6">
+    <!-- Page header -->
+    <div>
+      <h1 class="text-2xl font-bold text-khilafat-900">Marketplace</h1>
+      <p class="text-sm text-gray-500 mt-0.5">Browse and trade goods with gold</p>
+    </div>
 
-          <div class="mt-3 flex items-center justify-between">
-            <div>
-              <div class="text-xs text-gray-500">Seller Reputation</div>
-              <div class="w-32 mt-1">
-                <div class="w-full h-2 bg-gray-200 rounded-full">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <!-- Products grid -->
+      <div class="lg:col-span-3">
+        <div v-if="products.length === 0" class="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center">
+          <div class="text-5xl mb-4">🏪</div>
+          <p class="text-gray-500 font-medium">No products listed yet</p>
+          <p class="text-sm text-gray-400 mt-1">Be the first to list an item</p>
+        </div>
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div
+            v-for="product in products"
+            :key="product.id"
+            class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md hover:border-khilafat-200 transition-all"
+          >
+            <!-- Placeholder banner -->
+            <div class="h-20 bg-gradient-to-br from-khilafat-100 via-khilafat-50 to-amber-50 flex items-center justify-center text-4xl">
+              📦
+            </div>
+            <div class="p-4">
+              <div class="flex items-start justify-between mb-1">
+                <h3 class="font-semibold text-gray-900 text-sm leading-snug">{{ product.name }}</h3>
+                <div class="ml-2 shrink-0 text-right">
+                  <div class="text-base font-bold text-amber-600">{{ formatPrice(product.price) }}<span class="text-xs ml-0.5">g</span></div>
+                </div>
+              </div>
+              <p v-if="product.description" class="text-xs text-gray-400 mb-3 line-clamp-2">{{ product.description }}</p>
+
+              <!-- Seller reputation bar -->
+              <div class="mb-4">
+                <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+                  <span>Seller trust</span>
+                  <span class="font-medium" :class="trustColor(product.sellerReputation).replace('bg-', 'text-')">{{ product.sellerReputation || 0 }}%</span>
+                </div>
+                <div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    :style="{
-                      width: trustWidth(product.sellerReputation) + '%',
-                    }"
+                    :style="{ width: trustWidth(product.sellerReputation) + '%' }"
                     :class="trustColor(product.sellerReputation)"
-                    class="h-2 rounded-full"
+                    class="h-1.5 rounded-full transition-all"
                   ></div>
                 </div>
               </div>
-            </div>
-            <div class="flex items-center gap-2">
-              <input
-                type="number"
-                v-model.number="quantities[product.id]"
-                min="1"
-                class="w-20 p-1 border rounded"
-              />
-              <button
-                class="px-3 py-1 bg-khilafat-600 text-white rounded-md"
-                @click="buyNow(product)"
-              >
-                Buy Now
-              </button>
+
+              <div class="flex items-center gap-2">
+                <input
+                  type="number"
+                  v-model.number="quantities[product.id]"
+                  min="1"
+                  :max="product.stock"
+                  class="w-16 px-2 py-1.5 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-khilafat-400 focus:border-transparent"
+                />
+                <button
+                  @click="buyNow(product)"
+                  class="flex-1 py-1.5 bg-khilafat-700 hover:bg-khilafat-600 text-white text-sm font-medium rounded-lg transition-colors"
+                >Buy Now</button>
+              </div>
+              <div class="text-xs text-gray-400 mt-2">{{ product.stock }} in stock</div>
             </div>
           </div>
         </div>
       </div>
+
+      <!-- Sidebar: List an Item -->
+      <aside class="lg:col-span-1">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 sticky top-24">
+          <h3 class="text-base font-semibold text-gray-900 mb-1">List an Item</h3>
+          <p class="text-xs text-gray-400 mb-4">Sell goods for gold</p>
+          <form @submit.prevent="listItem" class="space-y-3">
+            <div>
+              <label class="text-xs font-medium text-gray-600 block mb-1">Name</label>
+              <input
+                v-model="form.name"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-400 focus:border-transparent"
+                placeholder="Item name"
+                required
+              />
+            </div>
+            <div>
+              <label class="text-xs font-medium text-gray-600 block mb-1">Description</label>
+              <input
+                v-model="form.description"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-400 focus:border-transparent"
+                placeholder="Optional"
+              />
+            </div>
+            <div>
+              <label class="text-xs font-medium text-gray-600 block mb-1">Price (g)</label>
+              <input
+                v-model.number="form.priceGrams"
+                type="number"
+                step="0.001"
+                min="0.001"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-400 focus:border-transparent"
+                placeholder="0.000"
+                required
+              />
+            </div>
+            <div>
+              <label class="text-xs font-medium text-gray-600 block mb-1">Stock</label>
+              <input
+                v-model.number="form.stock"
+                type="number"
+                min="1"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-400 focus:border-transparent"
+                placeholder="1"
+                required
+              />
+            </div>
+            <button class="w-full py-2 bg-amber-500 hover:bg-amber-400 text-white font-semibold rounded-lg text-sm transition-colors">
+              + List Item
+            </button>
+          </form>
+
+          <div v-if="toast" class="mt-4 p-3 rounded-lg text-sm border" :class="toast.includes('failed') || toast.includes('Failed') ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'">
+            {{ toast }}
+          </div>
+        </div>
+      </aside>
     </div>
-
-    <aside class="col-span-1 bg-white border rounded-md p-4 shadow-sm">
-      <h3 class="text-lg font-semibold text-khilafat-700">List an Item</h3>
-      <form @submit.prevent="listItem" class="space-y-3 mt-3">
-        <input
-          v-model="form.name"
-          class="w-full p-2 border rounded"
-          placeholder="Name"
-          required
-        />
-        <input
-          v-model="form.description"
-          class="w-full p-2 border rounded"
-          placeholder="Description"
-        />
-        <input
-          v-model.number="form.priceGrams"
-          type="number"
-          step="0.1"
-          class="w-full p-2 border rounded"
-          placeholder="Price (g)"
-          required
-        />
-        <input
-          v-model.number="form.stock"
-          type="number"
-          class="w-full p-2 border rounded"
-          placeholder="Stock"
-          required
-        />
-        <button class="w-full py-2 bg-amber-500 text-white rounded">
-          List Item
-        </button>
-      </form>
-
-      <div v-if="toast" class="mt-4 transition-all">
-        <div class="p-2 rounded bg-green-100 text-green-800">{{ toast }}</div>
-      </div>
-    </aside>
   </div>
 </template>
 

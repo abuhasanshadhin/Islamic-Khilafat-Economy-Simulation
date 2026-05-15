@@ -1,14 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const { BaitulMalEntity } = require('../entities/BaitulMal');
 
-function makeStateRoutes(prisma, authenticateToken) {
-  // GET /api/state/stats - protected
+function makeStateRoutes(dataSource, authenticateToken) {
   router.get('/stats', authenticateToken, async (req, res) => {
     try {
-      const bait = await prisma.baitulMal.findUnique({ where: { id: 1 } });
+      const bait = await dataSource.getRepository(BaitulMalEntity).findOneBy({ id: 1 });
       if (!bait) return res.status(404).json({ error: 'BaitulMal record not found' });
 
-      // bigIntMiddleware will stringify BigInt on res.json, but ensure values are present
       res.json({
         id: bait.id,
         goldReserve: bait.goldReserve,

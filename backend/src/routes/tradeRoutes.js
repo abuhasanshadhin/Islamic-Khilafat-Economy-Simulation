@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 
-function makeTradeRoutes(prisma, authenticateToken, io) {
+function makeTradeRoutes(dataSource, authenticateToken, io) {
   const makeTradeController = require('../controllers/tradeController');
-  const { purchaseProduct } = makeTradeController(prisma, io);
+  const { purchaseProduct } = makeTradeController(dataSource, io);
 
   router.post('/purchase', authenticateToken, purchaseProduct);
 

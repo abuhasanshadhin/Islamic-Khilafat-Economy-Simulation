@@ -1,21 +1,27 @@
 const { reportSchema } = require('../validation/hisbahSchema');
 const { calculateReputation } = require('../services/reputationService');
+const { UserEntity } = require('../entities/User');
+const { ReportEntity } = require('../entities/Report');
 
-function makeHisbahController(prisma, io) {
+function makeHisbahController(dataSource, io) {
   async function report(req, res) {
     try {
       const data = reportSchema.parse(req.body);
       const reporterId = req.user && req.user.userId;
       if (!reporterId) return res.status(401).json({ error: 'Unauthorized' });
 
-      const accused = await prisma.user.findUnique({ where: { id: data.accusedId } });
+      const accused = await dataSource.getRepository(UserEntity).findOneBy({ id: data.accusedId });
       if (!accused) return res.status(404).json({ error: 'Accused user not found' });
 
-      const created = await prisma.report.create({ data: { reporterId, accusedId: data.accusedId, reason: data.reason, status: data.markValid ? 'VALID' : 'OPEN' } });
+      const created = await dataSource.getRepository(ReportEntity).save({
+        reporterId,
+        accusedId: data.accusedId,
+        reason: data.reason,
+        status: data.markValid ? 'VALID' : 'OPEN',
+      });
 
-      // If marked valid, recalculate reputation immediately
       if (data.markValid) {
-        await calculateReputation(prisma, io, data.accusedId);
+        await calculateReputation(dataSource, io, data.accusedId);
       }
 
       return res.status(201).json({ success: true, reportId: created.id });
@@ -30,10 +36,12 @@ function makeHisbahController(prisma, io) {
     try {
       const user = req.user;
       if (!user) return res.status(401).json({ error: 'Unauthorized' });
-      // only SHURA or KHALIFA can view pending
       if (user.role !== 'SHURA' && user.role !== 'KHALIFA') return res.status(403).json({ error: 'Forbidden' });
 
-      const reports = await prisma.report.findMany({ where: { status: 'OPEN' }, orderBy: { createdAt: 'desc' } });
+      const reports = await dataSource.getRepository(ReportEntity).find({
+        where: { status: 'OPEN' },
+        order: { createdAt: 'DESC' },
+      });
       res.json(reports);
     } catch (err) {
       console.error('[hisbah] pending error', err);
@@ -48,10 +56,11 @@ function makeHisbahController(prisma, io) {
       if (user.role !== 'SHURA' && user.role !== 'KHALIFA') return res.status(403).json({ error: 'Forbidden' });
 
       const id = Number(req.params.id);
-      const rep = await prisma.report.update({ where: { id }, data: { status: 'VALID' } });
+      const rep = await dataSource.getRepository(ReportEntity).findOneBy({ id });
+      if (!rep) return res.status(404).json({ error: 'Report not found' });
 
-      // recalc reputation for accused
-      await calculateReputation(prisma, io, rep.accusedId);
+      await dataSource.getRepository(ReportEntity).update({ id }, { status: 'VALID' });
+      await calculateReputation(dataSource, io, rep.accusedId);
 
       res.json({ success: true });
     } catch (err) {
@@ -67,7 +76,7 @@ function makeHisbahController(prisma, io) {
       if (user.role !== 'SHURA' && user.role !== 'KHALIFA') return res.status(403).json({ error: 'Forbidden' });
 
       const id = Number(req.params.id);
-      await prisma.report.update({ where: { id }, data: { status: 'RESOLVED' } });
+      await dataSource.getRepository(ReportEntity).update({ id }, { status: 'RESOLVED' });
       res.json({ success: true });
     } catch (err) {
       console.error('[hisbah] resolve error', err);
@@ -82,7 +91,7 @@ function makeHisbahController(prisma, io) {
       if (user.role !== 'SHURA' && user.role !== 'KHALIFA') return res.status(403).json({ error: 'Forbidden' });
 
       const accusedId = Number(req.params.accusedId);
-      await calculateReputation(prisma, io, accusedId);
+      await calculateReputation(dataSource, io, accusedId);
       res.json({ success: true });
     } catch (err) {
       console.error('[hisbah] recalc error', err);

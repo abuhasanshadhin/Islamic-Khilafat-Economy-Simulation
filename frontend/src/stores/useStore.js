@@ -4,6 +4,8 @@ export const useStore = defineStore('main', {
     state: () => ({
         user: {
             id: null,
+            username: null,
+            email: null,
             goldBalance: '0', // store as string (mg)
             reputationScore: 0,
             role: 'USER',

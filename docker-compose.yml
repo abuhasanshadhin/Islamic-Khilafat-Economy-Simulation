@@ -10,7 +10,7 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     ports:
-      - "3307:3306"
+      - "3309:3306"
 
   backend:
     build: ./backend
@@ -20,16 +20,14 @@ services:
     depends_on:
       - db
     ports:
-      - "3000:3000"
-    volumes:
-      - ./backend:/app
-    command: sh -c "npx prisma migrate deploy && node server.js"
+      - "5000:3000"
+    command: sh -c "node server.js"
 
   frontend:
     build: ./frontend
     restart: unless-stopped
     ports:
-      - "5173:80"
+      - "8090:80"
     depends_on:
       - backend
 

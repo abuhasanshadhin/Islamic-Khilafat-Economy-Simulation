@@ -1,6 +1,8 @@
 const makeStockService = require('../services/stockService');
+const { UserEntity } = require('../entities/User');
+const { StockEntity } = require('../entities/Stock');
 
-function makeStockController(prisma, io) {
+function makeStockController(dataSource, io) {
   const { goPublic, buyShares, distributeDividends } = makeStockService;
 
   async function ipo(req, res) {
@@ -8,15 +10,14 @@ function makeStockController(prisma, io) {
       const ownerId = req.user.userId;
       const { name, totalShares, initialPriceMg } = req.body;
 
-      // Reputation check
-      const owner = await prisma.user.findUnique({ where: { id: ownerId } });
+      const owner = await dataSource.getRepository(UserEntity).findOneBy({ id: ownerId });
       if (!owner) return res.status(404).json({ error: 'Owner not found' });
       if (owner.reputationScore <= 80) return res.status(403).json({ error: 'Insufficient reputation to go public' });
 
-      const stock = await goPublic(prisma, ownerId, name, Number(totalShares), BigInt(initialPriceMg));
+      const stock = await goPublic(dataSource, ownerId, name, Number(totalShares), BigInt(initialPriceMg));
       return res.json(stock);
     } catch (err) {
-      console.error('[stockController.ip o] error', err);
+      console.error('[stockController.ipo] error', err);
       res.status(500).json({ error: String(err.message || err) });
     }
   }
@@ -25,7 +26,7 @@ function makeStockController(prisma, io) {
     try {
       const buyerId = req.user.userId;
       const { stockId, shares } = req.body;
-      const result = await buyShares(prisma, io, buyerId, Number(stockId), Number(shares));
+      const result = await buyShares(dataSource, io, buyerId, Number(stockId), Number(shares));
       return res.json(result);
     } catch (err) {
       console.error('[stockController.buy] error', err);
@@ -37,7 +38,7 @@ function makeStockController(prisma, io) {
     try {
       const ownerId = req.user.userId;
       const { stockId, totalAmountMg } = req.body;
-      const result = await distributeDividends(prisma, io, ownerId, Number(stockId), Number(totalAmountMg));
+      const result = await distributeDividends(dataSource, io, ownerId, Number(stockId), Number(totalAmountMg));
       return res.json(result);
     } catch (err) {
       console.error('[stockController.distribute] error', err);
@@ -47,7 +48,7 @@ function makeStockController(prisma, io) {
 
   async function listStocks(req, res) {
     try {
-      const stocks = await prisma.stock.findMany({ include: { owner: true } });
+      const stocks = await dataSource.getRepository(StockEntity).find({ relations: ['owner'] });
       return res.json(stocks);
     } catch (err) {
       console.error('[stockController.listStocks] error', err);

@@ -1,13 +1,4 @@
-import 'dotenv/config';
-import { defineConfig, env } from 'prisma/config';
+// This file is kept for reference but is not used by Prisma v6.
+// Prisma v6 reads DATABASE_URL directly from schema.prisma datasource block.
+export {};
 
-export default defineConfig({
-  schema: 'prisma/schema.prisma',
-  migrations: { path: 'prisma/migrations' },
-  datasource: {
-    // Use env() to require DATABASE_URL when running migrate commands.
-    // If you need optional behavior for commands like `prisma generate`,
-    // use `process.env.DATABASE_URL` instead.
-    url: env('DATABASE_URL'),
-  },
-});
