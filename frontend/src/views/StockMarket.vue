@@ -6,6 +6,10 @@
       <p class="text-sm text-gray-500 mt-0.5">
         Halal equity trading — no riba, no speculation
       </p>
+      <p class="text-xs text-gray-400 mt-2 max-w-2xl">
+        Trade halal company shares with live prices. Only trusted members with
+        sufficient reputation may launch an IPO.
+      </p>
     </div>
 
     <!-- Resource Prices Ticker -->

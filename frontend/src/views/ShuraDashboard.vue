@@ -13,6 +13,10 @@
         File new Hisbah reports, review pending issues, and manage state
         decisions from one central council page.
       </p>
+      <p class="text-xs text-gray-400 max-w-2xl">
+        Only authorized council members may file, validate, or resolve Hisbah
+        reports to maintain market justice and Khilafat oversight.
+      </p>
     </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-[1.45fr_1fr] gap-6">

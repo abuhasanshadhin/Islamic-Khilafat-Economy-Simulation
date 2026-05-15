@@ -60,6 +60,10 @@
             <p v-if="profile.memberSince" class="text-sm text-gray-400">
               Member since {{ formatDate(profile.memberSince) }}
             </p>
+            <p class="text-xs text-gray-400 mt-2 max-w-2xl">
+              Review this member's reputation, role, and holdings before sending
+              gold or interacting in the marketplace.
+            </p>
             <!-- Self badge -->
             <div
               v-if="isSelf"

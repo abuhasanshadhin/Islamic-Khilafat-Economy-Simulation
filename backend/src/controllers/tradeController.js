@@ -74,6 +74,10 @@ function makeTradeController(dataSource, io) {
           io.to(`user:${result.sellerId}`).emit('transaction_created', txPayload);
           io.to(`user:${result.buyerId}`).emit('balance_updated', { goldBalance: result.newBuyerBalance });
           io.to(`user:${result.sellerId}`).emit('balance_updated', { goldBalance: result.newSellerBalance });
+          io.emit('market:product-updated', {
+            productId: result.product.id,
+            stock: result.product.stock - quantity,
+          });
           if (result.totalPrice >= threshold) {
             io.emit('new_trade_occurred', {
               productId: result.product.id,

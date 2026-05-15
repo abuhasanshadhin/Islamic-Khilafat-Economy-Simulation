@@ -11,7 +11,7 @@ socket.on('connect', () => {
         try {
             const payload = JSON.parse(atob(token.split('.')[1]))
             if (payload.userId) socket.emit('identify', payload.userId)
-        } catch {}
+        } catch { }
     }
 })
 
@@ -80,6 +80,16 @@ socket.on('market:new-listing', () => {
     store.marketRefreshKey = (store.marketRefreshKey ?? 0) + 1
 })
 
+socket.on('market:product-updated', () => {
+    const store = useStore()
+    store.marketRefreshKey = (store.marketRefreshKey ?? 0) + 1
+})
+
+socket.on('stock:new-listing', () => {
+    const store = useStore()
+    store.stockRefreshKey = (store.stockRefreshKey ?? 0) + 1
+})
+
 socket.on('shares_changed', (payload) => {
     const store = useStore()
     // Trigger stock list refresh
@@ -102,7 +112,7 @@ socket.on('dividends_distributed', (payload) => {
             const current = BigInt(store.user.goldBalance || '0')
             const received = BigInt(payload.receivedAmount)
             store.setUser({ goldBalance: (current + received).toString() })
-        } catch {}
+        } catch { }
     }
 })
 

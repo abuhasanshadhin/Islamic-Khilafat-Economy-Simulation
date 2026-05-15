@@ -15,6 +15,12 @@ function makeStockController(dataSource, io) {
       if (owner.reputationScore <= 80) return res.status(403).json({ error: 'Insufficient reputation to go public' });
 
       const stock = await goPublic(dataSource, ownerId, name, Number(totalShares), BigInt(initialPriceMg));
+      if (io) {
+        io.emit('stock:new-listing', {
+          stockId: stock.id,
+          name: stock.name,
+        });
+      }
       return res.json(stock);
     } catch (err) {
       console.error('[stockController.ipo] error', err);

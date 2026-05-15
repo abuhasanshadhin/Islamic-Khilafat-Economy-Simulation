@@ -7,6 +7,11 @@
         <p class="text-sm text-gray-500 mt-0.5">
           Your personal treasury overview
         </p>
+        <p class="text-xs text-gray-400 mt-2 max-w-2xl">
+          Monitor your gold balance, reputation, role, and zakat eligibility at
+          a glance. Use this page to stay informed about your current standing
+          in the Khilafat economy.
+        </p>
       </div>
     </div>
 

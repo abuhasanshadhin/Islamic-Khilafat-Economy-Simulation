@@ -7,6 +7,10 @@
         <p class="text-sm text-gray-500 mt-0.5">
           {{ meta.total }} registered members of the Ummah
         </p>
+        <p class="text-xs text-gray-400 mt-2 max-w-2xl">
+          Search and sort members by reputation, gold balance, or name to find
+          trusted people to trade or send gold to.
+        </p>
       </div>
       <div class="flex items-center gap-3">
         <input

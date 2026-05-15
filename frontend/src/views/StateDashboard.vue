@@ -5,6 +5,10 @@
       <p class="text-sm text-gray-500 mt-0.5">
         Public state treasury metrics anyone can view
       </p>
+      <p class="text-xs text-gray-400 mt-2 max-w-2xl">
+        View the BaitulMal reserves and resource prices published by the state.
+        This page is meant for transparency and public accountability.
+      </p>
     </div>
 
     <div

@@ -6,6 +6,10 @@
       <p class="text-sm text-gray-500 mt-0.5">
         Browse and trade goods with gold
       </p>
+      <p class="text-xs text-gray-400 mt-2 max-w-2xl">
+        Find halal listings from trusted members, compare seller reputation, and
+        buy securely using your gold balance.
+      </p>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">

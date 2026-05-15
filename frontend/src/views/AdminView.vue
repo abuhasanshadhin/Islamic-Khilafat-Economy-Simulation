@@ -9,6 +9,10 @@
         <p class="text-sm text-gray-500 mt-0.5">
           Global monitoring and analytics
         </p>
+        <p class="text-xs text-gray-400 mt-2 max-w-2xl">
+          Manage the economy from the Khalifa perspective: review transactions,
+          assign roles, and ensure state actions follow Khilafat governance.
+        </p>
       </div>
     </div>
 
