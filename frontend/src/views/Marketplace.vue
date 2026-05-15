@@ -3,47 +3,81 @@
     <!-- Page header -->
     <div>
       <h1 class="text-2xl font-bold text-khilafat-900">Marketplace</h1>
-      <p class="text-sm text-gray-500 mt-0.5">Browse and trade goods with gold</p>
+      <p class="text-sm text-gray-500 mt-0.5">
+        Browse and trade goods with gold
+      </p>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
       <!-- Products grid -->
       <div :class="isLoggedIn ? 'lg:col-span-3' : 'lg:col-span-4'">
-        <div v-if="products.length === 0" class="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center">
+        <div
+          v-if="products.length === 0"
+          class="bg-white rounded-xl border border-gray-200 shadow-sm p-16 text-center"
+        >
           <div class="text-5xl mb-4">🏪</div>
           <p class="text-gray-500 font-medium">No products listed yet</p>
           <p class="text-sm text-gray-400 mt-1">
-            {{ isLoggedIn ? 'Be the first to list an item' : 'Sign in to list or buy items' }}
+            {{
+              isLoggedIn
+                ? "Be the first to list an item"
+                : "Sign in to list or buy items"
+            }}
           </p>
         </div>
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div
+          v-else
+          class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"
+        >
           <div
             v-for="product in products"
             :key="product.id"
             class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:shadow-md hover:border-khilafat-200 transition-all"
           >
             <!-- Placeholder banner -->
-            <div class="h-20 bg-linear-to-br from-khilafat-100 via-khilafat-50 to-amber-50 flex items-center justify-center text-4xl">
+            <div
+              class="h-20 bg-linear-to-br from-khilafat-100 via-khilafat-50 to-amber-50 flex items-center justify-center text-4xl"
+            >
               📦
             </div>
             <div class="p-4">
               <div class="flex items-start justify-between mb-1">
-                <h3 class="font-semibold text-gray-900 text-sm leading-snug">{{ product.name }}</h3>
+                <h3 class="font-semibold text-gray-900 text-sm leading-snug">
+                  {{ product.name }}
+                </h3>
                 <div class="ml-2 shrink-0 text-right">
-                  <div class="text-base font-bold text-amber-600">{{ formatPrice(product.price) }}<span class="text-xs ml-0.5">g</span></div>
+                  <div class="text-base font-bold text-amber-600">
+                    {{ formatPrice(product.price)
+                    }}<span class="text-xs ml-0.5">g</span>
+                  </div>
                 </div>
               </div>
-              <p v-if="product.description" class="text-xs text-gray-400 mb-3 line-clamp-2">{{ product.description }}</p>
+              <p
+                v-if="product.description"
+                class="text-xs text-gray-400 mb-3 line-clamp-2"
+              >
+                {{ product.description }}
+              </p>
 
               <!-- Seller reputation bar -->
               <div class="mb-4">
-                <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+                <div
+                  class="flex items-center justify-between text-xs text-gray-400 mb-1"
+                >
                   <span>Seller trust · {{ product.sellerName }}</span>
-                  <span class="font-medium" :class="trustTextColor(product.sellerReputation)">{{ product.sellerReputation || 0 }}</span>
+                  <span
+                    class="font-medium"
+                    :class="trustTextColor(product.sellerReputation)"
+                    >{{ product.sellerReputation || 0 }}</span
+                  >
                 </div>
-                <div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden"
+                >
                   <div
-                    :style="{ width: trustWidth(product.sellerReputation) + '%' }"
+                    :style="{
+                      width: trustWidth(product.sellerReputation) + '%',
+                    }"
                     :class="trustColor(product.sellerReputation)"
                     class="h-1.5 rounded-full transition-all"
                   ></div>
@@ -63,16 +97,26 @@
                   <button
                     @click="buyNow(product)"
                     class="flex-1 py-1.5 bg-khilafat-700 hover:bg-khilafat-600 text-white text-sm font-medium rounded-lg transition-colors"
-                  >Buy Now</button>
+                  >
+                    Buy Now
+                  </button>
                 </div>
               </template>
-              <template v-else-if="isLoggedIn && product.ownerId === store.user.id">
+              <template
+                v-else-if="isLoggedIn && product.ownerId === store.user.id"
+              >
                 <div class="text-xs text-gray-400 italic">Your listing</div>
               </template>
               <template v-else>
-                <router-link to="/login" class="block text-center text-xs text-khilafat-600 hover:underline mt-1">Sign in to buy</router-link>
+                <router-link
+                  to="/login"
+                  class="block text-center text-xs text-khilafat-600 hover:underline mt-1"
+                  >Sign in to buy</router-link
+                >
               </template>
-              <div class="text-xs text-gray-400 mt-2">{{ product.stock }} in stock</div>
+              <div class="text-xs text-gray-400 mt-2">
+                {{ product.stock }} in stock
+              </div>
             </div>
           </div>
         </div>
@@ -80,18 +124,28 @@
 
       <!-- Sidebar: List an Item — authenticated users with rep >= 40 only -->
       <aside v-if="isLoggedIn" class="lg:col-span-1">
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 sticky top-24">
-          <h3 class="text-base font-semibold text-gray-900 mb-1">List an Item</h3>
+        <div
+          class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 sticky top-24"
+        >
+          <h3 class="text-base font-semibold text-gray-900 mb-1">
+            List an Item
+          </h3>
           <p class="text-xs text-gray-400 mb-4">Sell goods for gold</p>
 
           <!-- Reputation restriction notice -->
-          <div v-if="isReputationRestricted" class="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 mb-3">
-            ⚠ Your reputation score ({{ store.user.reputationScore }}) is below 40. Marketplace listing is restricted.
+          <div
+            v-if="isReputationRestricted"
+            class="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 mb-3"
+          >
+            ⚠ Your reputation score ({{ store.user.reputationScore }}) is below
+            40. Marketplace listing is restricted.
           </div>
 
           <form v-else @submit.prevent="listItem" class="space-y-3">
             <div>
-              <label class="text-xs font-medium text-gray-600 block mb-1">Name</label>
+              <label class="text-xs font-medium text-gray-600 block mb-1"
+                >Name</label
+              >
               <input
                 v-model="form.name"
                 class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-400 focus:border-transparent"
@@ -100,7 +154,9 @@
               />
             </div>
             <div>
-              <label class="text-xs font-medium text-gray-600 block mb-1">Description</label>
+              <label class="text-xs font-medium text-gray-600 block mb-1"
+                >Description</label
+              >
               <input
                 v-model="form.description"
                 class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-khilafat-400 focus:border-transparent"
@@ -108,7 +164,9 @@
               />
             </div>
             <div>
-              <label class="text-xs font-medium text-gray-600 block mb-1">Price (g)</label>
+              <label class="text-xs font-medium text-gray-600 block mb-1"
+                >Price (g)</label
+              >
               <input
                 v-model.number="form.priceGrams"
                 type="number"
@@ -120,7 +178,9 @@
               />
             </div>
             <div>
-              <label class="text-xs font-medium text-gray-600 block mb-1">Stock</label>
+              <label class="text-xs font-medium text-gray-600 block mb-1"
+                >Stock</label
+              >
               <input
                 v-model.number="form.stock"
                 type="number"
@@ -130,24 +190,39 @@
                 required
               />
             </div>
-            <button class="w-full py-2 bg-amber-500 hover:bg-amber-400 text-white font-semibold rounded-lg text-sm transition-colors">
+            <button
+              class="w-full py-2 bg-amber-500 hover:bg-amber-400 text-white font-semibold rounded-lg text-sm transition-colors"
+            >
               + List Item
             </button>
           </form>
 
-          <div v-if="toast" class="mt-4 p-3 rounded-lg text-sm border" :class="toast.includes('failed') || toast.includes('Failed') ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'">
-            {{ toast }}
+          <div
+            v-if="validationError"
+            class="mt-4 p-3 rounded-lg text-sm border bg-red-50 text-red-700 border-red-200"
+          >
+            {{ validationError }}
           </div>
         </div>
       </aside>
 
       <!-- Guest CTA -->
       <aside v-else class="lg:col-span-1">
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-center">
+        <div
+          class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-center"
+        >
           <div class="text-3xl mb-3">🔒</div>
-          <p class="text-sm font-semibold text-gray-700 mb-1">Sign in to trade</p>
-          <p class="text-xs text-gray-400 mb-4">Register to list items and buy from the marketplace</p>
-          <router-link to="/login" class="block w-full py-2 bg-khilafat-700 hover:bg-khilafat-600 text-white font-semibold rounded-lg text-sm transition-colors">Sign In</router-link>
+          <p class="text-sm font-semibold text-gray-700 mb-1">
+            Sign in to trade
+          </p>
+          <p class="text-xs text-gray-400 mb-4">
+            Register to list items and buy from the marketplace
+          </p>
+          <router-link
+            to="/login"
+            class="block w-full py-2 bg-khilafat-700 hover:bg-khilafat-600 text-white font-semibold rounded-lg text-sm transition-colors"
+            >Sign In</router-link
+          >
         </div>
       </aside>
     </div>
@@ -159,16 +234,19 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useStore } from "../stores/useStore";
 import socket from "../socket";
 import axios from "axios";
+import { showSuccessToast, showErrorToast } from "../utils/toast";
 
 const store = useStore();
 const products = ref([]);
 const quantities = ref({});
-const toast = ref("");
+const validationError = ref("");
 
 const form = ref({ name: "", description: "", priceGrams: null, stock: 1 });
 
 const isLoggedIn = computed(() => !!store.user.token);
-const isReputationRestricted = computed(() => Number(store.user.reputationScore) < 40);
+const isReputationRestricted = computed(
+  () => Number(store.user.reputationScore) < 40,
+);
 
 async function loadProducts() {
   try {
@@ -235,9 +313,7 @@ async function buyNow(product) {
       store.setUser({ goldBalance: newBalance });
     } catch (e) {}
 
-    // show success toast
-    toast.value = "Purchase successful";
-    setTimeout(() => (toast.value = ""), 3000);
+    showSuccessToast("Purchase successful");
     // add transaction locally
     store.addTransaction({
       id: Date.now(),
@@ -247,18 +323,17 @@ async function buyNow(product) {
     });
   } catch (e) {
     console.error("buyNow", e);
-    toast.value = "Purchase failed";
-    setTimeout(() => (toast.value = ""), 3000);
+    showErrorToast(e.response?.data?.error || "Purchase failed");
   }
 }
 
 async function listItem() {
   try {
+    validationError.value = "";
     const token = localStorage.getItem("token");
     const priceMg = BigInt(Math.round((form.value.priceGrams || 0) * 1000));
     if (priceMg <= 0n) {
-      toast.value = "Price must be > 0";
-      setTimeout(() => (toast.value = ""), 3000);
+      validationError.value = "Price must be > 0";
       return;
     }
 
@@ -278,14 +353,13 @@ async function listItem() {
       },
     );
     if (res.status >= 400) throw new Error("list failed");
-    toast.value = "Item listed";
-    setTimeout(() => (toast.value = ""), 3000);
+    showSuccessToast("Item listed");
+    validationError.value = "";
     form.value = { name: "", description: "", priceGrams: null, stock: 1 };
     loadProducts();
   } catch (e) {
     console.error("listItem", e);
-    toast.value = "Listing failed";
-    setTimeout(() => (toast.value = ""), 3000);
+    showErrorToast(e.response?.data?.error || "Listing failed");
   }
 }
 

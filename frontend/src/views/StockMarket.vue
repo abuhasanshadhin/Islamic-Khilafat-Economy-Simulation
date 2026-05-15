@@ -151,9 +151,6 @@
               class="w-full py-2 bg-khilafat-700 hover:bg-khilafat-600 disabled:opacity-60 text-white font-semibold rounded-lg text-sm transition-colors"
             >{{ ipoLoading ? 'Launching…' : '🚀 Launch IPO' }}</button>
           </form>
-          <div v-if="ipoMsg" class="mt-3 p-3 rounded-lg text-xs border" :class="ipoMsg.ok ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'">
-            {{ ipoMsg.text }}
-          </div>
         </div>
 
         <!-- Your Holdings -->
@@ -169,22 +166,13 @@
         </div>
       </aside>
     </div>
-
-    <!-- Toast -->
-    <div
-      v-if="toast"
-      class="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium border"
-      :class="toast.ok ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'"
-    >
-      {{ toast.text }}
-    </div>
-  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useStore } from '../stores/useStore'
 import axios from 'axios'
+import { showSuccessToast, showErrorToast } from '../utils/toast'
 
 const store = useStore()
 const stocks = ref([])
@@ -193,8 +181,6 @@ const buyForm = ref({})
 const dividendForm = ref({})
 const ipoForm = ref({ name: '', totalShares: 1000, initialPriceMg: 100 })
 const ipoLoading = ref(false)
-const ipoMsg = ref(null)
-const toast = ref(null)
 
 const isLoggedIn = computed(() => !!store.user.token)
 const canIPO = computed(() => Number(store.user.reputationScore) > 80)
@@ -221,11 +207,6 @@ function priceDisplay(resource) {
 
 function priceEvent(resource) {
   return store.prices[resource]?.event ?? null
-}
-
-function showToast(text, ok = true) {
-  toast.value = { text, ok }
-  setTimeout(() => (toast.value = null), 3000)
 }
 
 async function loadStocks() {
@@ -261,10 +242,10 @@ async function buyShares(stock) {
   const shares = buyForm.value[stock.id] || 1
   try {
     await axios.post('/api/stock/buy', { stockId: stock.id, shares }, { headers: authHeader() })
-    showToast(`Bought ${shares} shares of ${stock.name}`)
+    showSuccessToast(`Bought ${shares} shares of ${stock.name}`)
     loadStocks()
   } catch (e) {
-    showToast(e.response?.data?.error || 'Purchase failed', false)
+    showErrorToast(e.response?.data?.error || 'Purchase failed')
   }
 }
 
@@ -272,27 +253,26 @@ async function distributeDividends(stock) {
   const totalAmountMg = dividendForm.value[stock.id] || 1000
   try {
     await axios.post('/api/stock/distribute', { stockId: stock.id, totalAmountMg }, { headers: authHeader() })
-    showToast(`Distributed ${totalAmountMg}mg dividends for ${stock.name}`)
+    showSuccessToast(`Distributed ${totalAmountMg}mg dividends for ${stock.name}`)
     loadStocks()
   } catch (e) {
-    showToast(e.response?.data?.error || 'Distribution failed', false)
+    showErrorToast(e.response?.data?.error || 'Distribution failed')
   }
 }
 
 async function launchIPO() {
   ipoLoading.value = true
-  ipoMsg.value = null
   try {
     await axios.post('/api/stock/ipo', {
       name: ipoForm.value.name,
       totalShares: ipoForm.value.totalShares,
       initialPriceMg: ipoForm.value.initialPriceMg,
     }, { headers: authHeader() })
-    ipoMsg.value = { ok: true, text: `${ipoForm.value.name} is now publicly listed!` }
+    showSuccessToast(`${ipoForm.value.name} is now publicly listed!`)
     ipoForm.value = { name: '', totalShares: 1000, initialPriceMg: 100 }
     loadStocks()
   } catch (e) {
-    ipoMsg.value = { ok: false, text: e.response?.data?.error || 'IPO failed' }
+    showErrorToast(e.response?.data?.error || 'IPO failed')
   } finally {
     ipoLoading.value = false
   }

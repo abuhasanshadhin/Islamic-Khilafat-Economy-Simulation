@@ -15,12 +15,16 @@ axios.interceptors.response.use(
         return response
     },
     (error) => {
+        const rawError = error?.response?.data?.error
+        const isValidationError = Array.isArray(rawError)
         const message =
-            error?.response?.data?.error ||
-            error?.response?.data?.message ||
-            error?.message ||
-            'Server error'
-        showErrorToast(message)
+            !isValidationError &&
+            (rawError ||
+                error?.response?.data?.message ||
+                error?.message ||
+                'Server error')
+
+        if (message) showErrorToast(message)
         return Promise.reject(error)
     },
 )

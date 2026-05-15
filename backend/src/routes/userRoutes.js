@@ -9,7 +9,7 @@ const { paginate, parsePaginationParams } = require('../utils/pagination');
 function makeUserRoutes(dataSource, authenticateToken, io) {
   // Community member directory — supports server-side search + pagination
   // Query params: q (search), page (1-based), limit, sort (rep|gold|name)
-  router.get('/directory', authenticateToken, async (req, res) => {
+  router.get('/directory', async (req, res) => {
     try {
       const q = String(req.query.q || '').trim();
       const { page, limit } = parsePaginationParams(req.query);
@@ -54,7 +54,7 @@ function makeUserRoutes(dataSource, authenticateToken, io) {
   });
 
   // Public profile by username — includes their active listings
-  router.get('/profile/:username', authenticateToken, async (req, res) => {
+  router.get('/profile/:username', async (req, res) => {
     try {
       const user = await dataSource.getRepository(UserEntity).findOne({
         select: ['id', 'username', 'role', 'reputationScore', 'goldBalance', 'createdAt'],

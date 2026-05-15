@@ -16,8 +16,8 @@ const routes = [
     { path: '/marketplace', name: 'Marketplace', component: Marketplace },
     { path: '/stocks', name: 'Stocks', component: StockMarket },
     { path: '/shura', name: 'Shura', component: ShuraDashboard },
-    { path: '/members', name: 'Members', component: MemberDirectory, meta: { requiresAuth: true } },
-    { path: '/profile/:username', name: 'Profile', component: ProfileView, meta: { requiresAuth: true } },
+    { path: '/members', name: 'Members', component: MemberDirectory },
+    { path: '/profile/:username', name: 'Profile', component: ProfileView },
     { path: '/send-gold', name: 'SendGold', component: SendGoldView, meta: { requiresAuth: true } },
     { path: '/admin', name: 'Admin', component: AdminView, meta: { requiresAuth: true, requiresRole: 'KHALIFA' } },
     { path: '/login', name: 'Login', component: LoginView }
