@@ -18,7 +18,7 @@
         <select
           v-model="filters.sort"
           @change="fetchPage(1)"
-          class="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-khilafat-400 min-w-[160px]"
+          class="px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-khilafat-400 min-w-40"
         >
           <option disabled value="">Sort by…</option>
           <option value="rep">Reputation</option>
