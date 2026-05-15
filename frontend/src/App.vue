@@ -36,6 +36,7 @@
             >Stocks</router-link
           >
           <router-link
+            v-if="isCouncil"
             to="/shura"
             class="px-4 py-2 rounded-lg text-sm font-medium text-khilafat-200 hover:text-white hover:bg-khilafat-700 transition-colors"
             active-class="nav-active"
@@ -142,6 +143,9 @@ const router = useRouter();
 const dropdownOpen = ref(false);
 
 const isKhalifa = computed(() => store.user.role === "KHALIFA");
+const isCouncil = computed(() =>
+  ["SHURA", "KHALIFA", "MUHTASIB"].includes(store.user.role),
+);
 const avatarInitial = computed(() => {
   const name = store.user.username || store.user.email || "U";
   return name.charAt(0).toUpperCase();

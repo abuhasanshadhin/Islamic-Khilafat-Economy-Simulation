@@ -15,7 +15,7 @@ const routes = [
     { path: '/state', name: 'State', component: StateDashboard },
     { path: '/marketplace', name: 'Marketplace', component: Marketplace },
     { path: '/stocks', name: 'Stocks', component: StockMarket },
-    { path: '/shura', name: 'Shura', component: ShuraDashboard },
+    { path: '/shura', name: 'Shura', component: ShuraDashboard, meta: { requiresAuth: true, requiresRole: ['SHURA', 'KHALIFA', 'MUHTASIB'] } },
     { path: '/members', name: 'Members', component: MemberDirectory },
     { path: '/profile/:username', name: 'Profile', component: ProfileView },
     { path: '/send-gold', name: 'SendGold', component: SendGoldView, meta: { requiresAuth: true } },
@@ -34,7 +34,12 @@ router.beforeEach((to, _from) => {
     if (to.meta.requiresRole) {
         try {
             const payload = JSON.parse(atob(token.split('.')[1]))
-            if (payload.role !== to.meta.requiresRole) return '/'
+            const required = to.meta.requiresRole
+            if (Array.isArray(required)) {
+                if (!required.includes(payload.role)) return '/'
+            } else {
+                if (payload.role !== required) return '/'
+            }
         } catch {
             return '/login'
         }
