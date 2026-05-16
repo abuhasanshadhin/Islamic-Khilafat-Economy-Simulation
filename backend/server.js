@@ -74,22 +74,34 @@ app.use('/api/partnership', makePartnershipRoutes(AppDataSource, authenticateTok
 
 const PORT = process.env.PORT || 3000;
 
-AppDataSource.initialize()
-  .then(() => {
-    console.log('Database connected via TypeORM');
+async function initializeWithRetry(maxAttempts = 10, delayMs = 3000) {
+  let attempt = 0;
+  while (attempt < maxAttempts) {
+    attempt++;
+    try {
+      await AppDataSource.initialize();
+      console.log('Database connected via TypeORM');
 
-    const { startMining } = require('./src/services/miningService');
-    startMining(AppDataSource, io);
+      const { startMining } = require('./src/services/miningService');
+      startMining(AppDataSource, io);
 
-    const { startZakatCollector } = require('./src/services/zakatService');
-    startZakatCollector(AppDataSource, io, Number(process.env.ZAKAT_INTERVAL_MS || 24 * 60 * 60 * 1000));
+      const { startZakatCollector } = require('./src/services/zakatService');
+      startZakatCollector(AppDataSource, io, Number(process.env.ZAKAT_INTERVAL_MS || 24 * 60 * 60 * 1000));
 
-    const { startPriceEngine } = require('./src/services/priceService');
-    startPriceEngine(AppDataSource, io, Number(process.env.PRICE_ENGINE_INTERVAL_MS || 10 * 60 * 1000));
+      const { startPriceEngine } = require('./src/services/priceService');
+      startPriceEngine(AppDataSource, io, Number(process.env.PRICE_ENGINE_INTERVAL_MS || 10 * 60 * 1000));
 
-    httpServer.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
-  })
-  .catch((err) => {
-    console.error('Database connection failed:', err);
-    process.exit(1);
-  });
+      httpServer.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+      return;
+    } catch (err) {
+      console.error(`Database connection attempt ${attempt} failed:`, err.message || err);
+      if (attempt >= maxAttempts) {
+        console.error('Max DB connection attempts reached, exiting.');
+        process.exit(1);
+      }
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+}
+
+initializeWithRetry();
