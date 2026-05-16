@@ -344,8 +344,8 @@ async function loadStocks() {
         .map((s) => {
           const h = s.holdings?.find((h) => h.userId === store.user.id);
           return {
-            partnershipId: s.id,
-            partnershipName: s.name,
+            stockId: s.id,
+            stockName: s.name,
             shares: h?.shares ?? 0,
           };
         });
