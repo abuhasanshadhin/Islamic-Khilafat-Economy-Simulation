@@ -4,6 +4,8 @@ const { ResourcePriceEntity } = require('../entities/ResourcePrice');
 const { ProductEntity } = require('../entities/Product');
 const { UserEntity } = require('../entities/User');
 const authenticateToken = require('../middleware/authenticateToken');
+const { OwnedItemEntity } = require('../entities/OwnedItem');
+const { SaleLogEntity } = require('../entities/SaleLog');
 
 function makeMarketRoutes(dataSource, io) {
   router.get('/prices', async (req, res) => {
@@ -128,6 +130,49 @@ function makeMarketRoutes(dataSource, io) {
     } catch (err) {
       console.error('[marketRoutes] list error', err);
       res.status(500).json({ error: 'Failed to list product' });
+    }
+  });
+
+  // Resell an owned item: create a new product listing from user's OwnedItem
+  router.post('/resell', authenticateToken, async (req, res) => {
+    try {
+      const userId = req.user && req.user.userId;
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+      const { ownedItemId, price, quantity, name } = req.body;
+      if (!ownedItemId || !price || !quantity) return res.status(400).json({ error: 'ownedItemId, price and quantity are required' });
+
+      const qty = Number(quantity) || 0;
+      if (qty <= 0) return res.status(400).json({ error: 'quantity must be > 0' });
+
+      const oiRepo = dataSource.getRepository(OwnedItemEntity);
+      const owned = await oiRepo.findOneBy({ id: Number(ownedItemId) });
+      if (!owned) return res.status(404).json({ error: 'Owned item not found' });
+      if (owned.userId !== userId) return res.status(403).json({ error: 'Not your owned item' });
+      if ((owned.quantity || 0) < qty) return res.status(400).json({ error: 'Not enough quantity to resell' });
+
+      const priceBig = BigInt(price);
+      const product = await dataSource.getRepository(ProductEntity).save({
+        name: name || owned.productName || 'Resold item',
+        description: null,
+        price: priceBig,
+        stock: qty,
+        ownerId: userId,
+      });
+
+      // decrement owned quantity
+      owned.quantity = owned.quantity - qty;
+      await oiRepo.save(owned);
+
+      // create sale log entry
+      await dataSource.getRepository(SaleLogEntity).save({ sellerId: userId, productId: product.id, ownedItemId: owned.id, action: 'LISTED', price: priceBig, quantity: qty });
+
+      if (io) io.emit('market:new-listing', { id: product.id, name: product.name });
+
+      return res.status(201).json({ id: product.id, name: product.name, price: product.price.toString(), stock: product.stock });
+    } catch (err) {
+      console.error('[marketRoutes] resell error', err);
+      res.status(500).json({ error: 'Failed to create resell listing' });
     }
   });
 

@@ -86,6 +86,13 @@
                 Dashboard
               </router-link>
               <router-link
+                to="/purchases"
+                class="block px-4 py-2 text-sm hover:bg-gray-100"
+                @click="closeDropdown"
+              >
+                Purchases
+              </router-link>
+              <router-link
                 to="/send-gold"
                 class="block px-4 py-2 text-sm hover:bg-gray-100"
                 @click="closeDropdown"

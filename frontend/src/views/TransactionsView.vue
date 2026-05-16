@@ -60,8 +60,17 @@
               </div>
             </div>
             <div class="text-xs text-gray-500 mt-2">
-              From <strong>#{{ tx.senderId }}</strong> to
-              <strong>#{{ tx.receiverId }}</strong>
+              <template v-if="tx.type === 'TRADE' && tx.productName">
+                Purchased <strong>{{ tx.productName }}</strong>
+                <span v-if="tx.quantity"> (x{{ tx.quantity }})</span>
+                <br />
+                From <strong>#{{ tx.senderId }}</strong> to
+                <strong>#{{ tx.receiverId }}</strong>
+              </template>
+              <template v-else>
+                From <strong>#{{ tx.senderId }}</strong> to
+                <strong>#{{ tx.receiverId }}</strong>
+              </template>
             </div>
           </div>
           <div class="text-right">

@@ -2,6 +2,8 @@ const { purchaseSchema } = require('../validation/tradeSchema');
 const { ProductEntity } = require('../entities/Product');
 const { UserEntity } = require('../entities/User');
 const { TransactionEntity } = require('../entities/Transaction');
+const { OwnedItemEntity } = require('../entities/OwnedItem');
+const { SaleLogEntity } = require('../entities/SaleLog');
 
 function makeTradeController(dataSource, io) {
   async function purchaseProduct(req, res) {
@@ -45,7 +47,31 @@ function makeTradeController(dataSource, io) {
           receiverId: seller.id,
           amount: totalPrice,
           type: 'TRADE',
+          productId: product.id,
+          productName: product.name,
+          quantity,
         });
+
+        // create or update OwnedItem for buyer so we can track ownership
+        try {
+          const oiRepo = manager.getRepository(OwnedItemEntity);
+          let owned = null;
+          if (product.id) {
+            owned = await oiRepo.findOne({ where: { userId: buyerId, productId: product.id } });
+          }
+          if (!owned) {
+            owned = await oiRepo.save({ userId: buyerId, productId: product.id, productName: product.name, quantity, originalTxId: createdTx.id });
+          } else {
+            owned.quantity = (owned.quantity || 0) + quantity;
+            await oiRepo.save(owned);
+          }
+
+          // create a purchase log
+          const logRepo = manager.getRepository(SaleLogEntity);
+          await logRepo.save({ sellerId: seller.id, buyerId: buyerId, productId: product.id, ownedItemId: owned.id, action: 'PURCHASED', price: totalPrice, quantity, txId: createdTx.id });
+        } catch (e) {
+          console.warn('Failed to create OwnedItem or SaleLog', e.message || e);
+        }
 
         return {
           product,

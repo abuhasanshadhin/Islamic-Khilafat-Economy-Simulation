@@ -10,6 +10,10 @@ const TransactionEntity = new EntitySchema({
     receiverId: { type: 'int', nullable: true },
     amount: { type: 'bigint', transformer: bigIntTransformer },
     type: { type: 'enum', enum: ['GRANT', 'TRANSFER', 'TRADE', 'ZAKAT'] },
+    // Optional purchase metadata
+    productId: { type: 'int', nullable: true },
+    productName: { type: 'varchar', nullable: true },
+    quantity: { type: 'int', nullable: true },
     timestamp: { type: 'datetime', createDate: true },
   },
   relations: {

@@ -3,7 +3,7 @@ const router = express.Router();
 const { UserEntity } = require('../entities/User');
 const { ProductEntity } = require('../entities/Product');
 const { TransactionEntity } = require('../entities/Transaction');
-const { Like } = require('typeorm');
+const { Like, In } = require('typeorm');
 const { paginate, parsePaginationParams } = require('../utils/pagination');
 
 function makeUserRoutes(dataSource, authenticateToken, io) {
@@ -161,6 +161,9 @@ function makeUserRoutes(dataSource, authenticateToken, io) {
         senderId: t.senderId,
         receiverId: t.receiverId,
         timestamp: t.timestamp,
+        productId: t.productId || null,
+        productName: t.productName || null,
+        quantity: t.quantity || null,
       }));
 
       const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -174,6 +177,93 @@ function makeUserRoutes(dataSource, authenticateToken, io) {
     } catch (err) {
       console.error('[userRoutes] /transactions error', err);
       res.status(500).json({ error: 'Failed to fetch transactions' });
+    }
+  });
+
+  // Get current user's purchases (only TRADE where user was buyer)
+  router.get('/purchases', authenticateToken, async (req, res) => {
+    try {
+      const userId = req.user && req.user.userId;
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+      const page = Math.max(1, Number(req.query.page) || 1);
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10));
+      const txRepo = dataSource.getRepository(TransactionEntity);
+
+      const [txs, total] = await txRepo.findAndCount({
+        where: { senderId: userId, type: 'TRADE' },
+        order: { timestamp: 'DESC' },
+        skip: (page - 1) * limit,
+        take: limit,
+      });
+
+      // Attempt to enrich productName for older transactions that may not have it
+      const productIds = Array.from(new Set(txs.filter(t => t.productId).map(t => t.productId)));
+      let productsMap = {};
+      if (productIds.length > 0) {
+        const products = await dataSource.getRepository(ProductEntity).findBy({ id: In(productIds) });
+        productsMap = Object.fromEntries(products.map(p => [p.id, p]));
+      }
+
+      // Enrich seller username for display
+      const sellerIds = Array.from(new Set(txs.map(t => t.receiverId).filter(Boolean)));
+      let sellersMap = {};
+      if (sellerIds.length > 0) {
+        const users = await dataSource.getRepository(UserEntity).findBy({ id: In(sellerIds) });
+        sellersMap = Object.fromEntries(users.map(u => [u.id, u]));
+      }
+
+      const items = txs.map((t) => ({
+        id: t.id,
+        productId: t.productId || null,
+        productName: t.productName || (t.productId && productsMap[t.productId] ? productsMap[t.productId].name : null),
+        quantity: t.quantity || null,
+        sellerId: t.receiverId,
+        sellerName: t.receiverId && sellersMap[t.receiverId] ? sellersMap[t.receiverId].username : null,
+        amount: t.amount ? t.amount.toString() : '0',
+        timestamp: t.timestamp,
+      }));
+
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+      const rangeStart = total === 0 ? 0 : (page - 1) * limit + 1;
+      const rangeEnd = Math.min(total, page * limit);
+
+      return res.json({ items, meta: { page, limit, total, totalPages, rangeStart, rangeEnd } });
+    } catch (err) {
+      console.error('[userRoutes] /purchases error', err);
+      res.status(500).json({ error: 'Failed to fetch purchases' });
+    }
+  });
+
+  // Get current user's owned items (items they've purchased and still hold)
+  router.get('/owned', authenticateToken, async (req, res) => {
+    try {
+      const userId = req.user && req.user.userId;
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+      const repo = dataSource.getRepository(require('../entities/OwnedItem').OwnedItemEntity);
+      const items = await repo.find({ where: { userId }, order: { id: 'DESC' } });
+
+      return res.json(items.map(i => ({ id: i.id, productId: i.productId || null, productName: i.productName || null, quantity: i.quantity || 0, originalTxId: i.originalTxId || null, createdAt: i.createdAt })));
+    } catch (err) {
+      console.error('[userRoutes] /owned error', err);
+      res.status(500).json({ error: 'Failed to fetch owned items' });
+    }
+  });
+
+  // Get sale logs for current user (as buyer or seller)
+  router.get('/salelogs', authenticateToken, async (req, res) => {
+    try {
+      const userId = req.user && req.user.userId;
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+      const repo = dataSource.getRepository(require('../entities/SaleLog').SaleLogEntity);
+      const logs = await repo.find({ where: [{ sellerId: userId }, { buyerId: userId }], order: { id: 'DESC' } });
+
+      return res.json(logs.map(l => ({ id: l.id, action: l.action, productId: l.productId || null, ownedItemId: l.ownedItemId || null, price: l.price ? l.price.toString() : null, quantity: l.quantity || null, txId: l.txId || null, timestamp: l.timestamp })));
+    } catch (err) {
+      console.error('[userRoutes] /salelogs error', err);
+      res.status(500).json({ error: 'Failed to fetch sale logs' });
     }
   });
 
