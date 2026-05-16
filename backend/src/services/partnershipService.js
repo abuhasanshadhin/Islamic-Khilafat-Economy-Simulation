@@ -45,7 +45,7 @@ async function buyShares(dataSource, io, buyerId, partnershipId, sharesWanted) {
     if (existing) {
       await manager.update(ShareOwnershipEntity, { id: existing.id }, { shares: existing.shares + sharesWanted });
     } else {
-      await manager.save(ShareOwnershipEntity, { stockId, userId: buyerId, shares: sharesWanted });
+      await manager.save(ShareOwnershipEntity, { stockId: partnershipId, userId: buyerId, shares: sharesWanted });
     }
 
     await manager.save(TransactionEntity, { senderId: buyerId, receiverId: partnership.ownerId, amount: cost, type: 'TRADE' });

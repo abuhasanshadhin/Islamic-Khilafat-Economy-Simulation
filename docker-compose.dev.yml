@@ -38,7 +38,7 @@ services:
       - ./frontend:/app:delegated
       - /app/node_modules
     ports:
-      - "5173:5173"
+      - "5174:5173"
     # install deps if vite binary is missing, then start vite in host mode
     command: sh -c "(test -x node_modules/.bin/vite || npm install --legacy-peer-deps --no-audit --no-fund) && npm run dev -- --host"
     environment:
