@@ -12,6 +12,8 @@ const { PartnershipEntity } = require('./entities/Partnership');
 const { ShareOwnershipEntity } = require('./entities/ShareOwnership');
 const { OwnedItemEntity } = require('./entities/OwnedItem');
 const { SaleLogEntity } = require('./entities/SaleLog');
+const { ProposalEntity } = require('./entities/Proposal');
+const { InvestigationNoteEntity } = require('./entities/InvestigationNote');
 
 const AppDataSource = new DataSource({
   type: 'mysql',
@@ -29,6 +31,8 @@ const AppDataSource = new DataSource({
     ShareOwnershipEntity,
     OwnedItemEntity,
     SaleLogEntity,
+    ProposalEntity,
+    InvestigationNoteEntity,
   ],
   synchronize: true,
   logging: false,

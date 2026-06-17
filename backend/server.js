@@ -72,6 +72,9 @@ app.use('/api/market', makeMarketRoutes(AppDataSource, io));
 const makePartnershipRoutes = require('./src/routes/partnershipRoutes');
 app.use('/api/partnership', makePartnershipRoutes(AppDataSource, authenticateToken, io));
 
+const makeShuraRoutes = require('./src/routes/shuraRoutes');
+app.use('/api/shura', makeShuraRoutes(AppDataSource, authenticateToken, io));
+
 const PORT = process.env.PORT || 3000;
 
 async function initializeWithRetry(maxAttempts = 10, delayMs = 3000) {

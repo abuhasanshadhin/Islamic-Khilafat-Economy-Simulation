@@ -119,6 +119,74 @@ function makeHisbahController(dataSource, io) {
     }
   }
 
+  async function assignInvestigator(req, res) {
+    try {
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+      if (user.role !== 'SHURA' && user.role !== 'KHALIFA' && user.role !== 'MUHTASIB') return res.status(403).json({ error: 'Forbidden' });
+
+      const id = Number(req.params.id);
+      const { investigatorUsername } = req.body;
+      if (!investigatorUsername) return res.status(400).json({ error: 'investigatorUsername required' });
+
+      const investigator = await dataSource.getRepository(UserEntity).findOneBy({ username: investigatorUsername });
+      if (!investigator) return res.status(404).json({ error: 'Investigator not found' });
+
+      const repo = dataSource.getRepository(ReportEntity);
+      const rep = await repo.findOneBy({ id });
+      if (!rep) return res.status(404).json({ error: 'Report not found' });
+
+      await repo.update({ id }, { investigatorId: investigator.id });
+      if (io) io.emit('hisbah:investigator-assigned', { reportId: id, investigatorId: investigator.id });
+      return res.json({ success: true, reportId: id, investigatorId: investigator.id });
+    } catch (err) {
+      console.error('[hisbah] assignInvestigator error', err);
+      res.status(500).json({ error: 'Failed to assign investigator' });
+    }
+  }
+
+  async function addNote(req, res) {
+    try {
+      const user = req.user;
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+      const id = Number(req.params.id);
+      const { note } = req.body;
+      if (!note) return res.status(400).json({ error: 'note required' });
+
+      const repo = dataSource.getRepository(ReportEntity);
+      const rep = await repo.findOneBy({ id });
+      if (!rep) return res.status(404).json({ error: 'Report not found' });
+
+      const noteRepo = dataSource.getRepository(require('../entities/InvestigationNote').InvestigationNoteEntity);
+      const created = await noteRepo.save({ reportId: id, authorId: user.userId, note });
+      if (io) io.emit('hisbah:note-added', { reportId: id, noteId: created.id });
+      return res.json({ success: true, noteId: created.id });
+    } catch (err) {
+      console.error('[hisbah] addNote error', err);
+      res.status(500).json({ error: 'Failed to add note' });
+    }
+  }
+
+  async function listNotes(req, res) {
+    try {
+      const id = Number(req.params.id);
+      const noteRepo = dataSource.getRepository(require('../entities/InvestigationNote').InvestigationNoteEntity);
+      const notes = await noteRepo.find({ where: { reportId: id }, order: { id: 'ASC' } });
+      // enrich authors
+      const userIds = [...new Set(notes.map(n => n.authorId))];
+      let usersMap = {};
+      if (userIds.length > 0) {
+        const users = await dataSource.getRepository(UserEntity).findBy({ id: In(userIds) });
+        users.forEach(u => { usersMap[u.id] = u.username; });
+      }
+      return res.json(notes.map(n => ({ id: n.id, authorId: n.authorId, authorUsername: usersMap[n.authorId] || `#${n.authorId}`, note: n.note, createdAt: n.createdAt })));
+    } catch (err) {
+      console.error('[hisbah] listNotes error', err);
+      res.status(500).json({ error: 'Failed to list notes' });
+    }
+  }
+
   return { report, pending, validate, resolve, recalc };
 }
 

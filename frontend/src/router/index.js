@@ -2,11 +2,15 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Dashboard from '../views/Dashboard.vue'
 import Marketplace from '../views/Marketplace.vue'
 import ShuraDashboard from '../views/ShuraDashboard.vue'
+import ShuraProposals from '../views/ShuraProposals.vue'
 import StateDashboard from '../views/StateDashboard.vue'
 import AdminView from '../views/AdminView.vue'
 import LoginView from '../views/LoginView.vue'
 import PartnershipMarket from '../views/PartnershipMarket.vue'
 import MemberDirectory from '../views/MemberDirectory.vue'
+import BeitulMalDashboard from '../views/BeitulMalDashboard.vue'
+import MuhatasibPanel from '../views/MuhatasibPanel.vue'
+import Contracts from '../views/Contracts.vue'
 import ProfileView from '../views/ProfileView.vue'
 import SendGoldView from '../views/SendGoldView.vue'
 import TransactionsView from '../views/TransactionsView.vue'
@@ -19,6 +23,10 @@ const routes = [
     { path: '/marketplace', name: 'Marketplace', component: Marketplace },
     { path: '/partnerships', name: 'Partnerships', component: PartnershipMarket },
     { path: '/shura', name: 'Shura', component: ShuraDashboard, meta: { requiresAuth: true, requiresRole: ['SHURA', 'KHALIFA', 'MUHTASIB'] } },
+    { path: '/shura/proposals', name: 'ShuraProposals', component: ShuraProposals, meta: { requiresAuth: true, requiresRole: ['SHURA', 'KHALIFA', 'MUHTASIB'] } },
+    { path: '/baitulmal', name: 'BeitulMal', component: BeitulMalDashboard },
+    { path: '/muhatasib', name: 'Muhatasib', component: MuhatasibPanel, meta: { requiresAuth: true, requiresRole: ['MUHTASIB', 'SHURA', 'KHALIFA'] } },
+    { path: '/contracts', name: 'Contracts', component: Contracts, meta: { requiresAuth: true } },
     { path: '/members', name: 'Members', component: MemberDirectory },
     { path: '/profile/:username', name: 'Profile', component: ProfileView },
     { path: '/send-gold', name: 'SendGold', component: SendGoldView, meta: { requiresAuth: true } },

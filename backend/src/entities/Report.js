@@ -7,6 +7,7 @@ const ReportEntity = new EntitySchema({
     id: { primary: true, type: 'int', generated: true },
     reporterId: { type: 'int' },
     accusedId: { type: 'int' },
+    investigatorId: { type: 'int', nullable: true },
     reason: { type: 'varchar' },
     status: { type: 'varchar', default: 'OPEN' },
     createdAt: { type: 'datetime', createDate: true },
@@ -23,6 +24,13 @@ const ReportEntity = new EntitySchema({
       target: 'User',
       joinColumn: { name: 'accusedId' },
       inverseSide: 'reportsAgainst',
+    },
+    investigator: {
+      type: 'many-to-one',
+      target: 'User',
+      joinColumn: { name: 'investigatorId' },
+      inverseSide: 'investigations',
+      nullable: true,
     },
   },
 });
